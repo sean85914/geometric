@@ -6,8 +6,16 @@ YZ_PLANE = [1.0, 0.0, 0.0, 0.0]
 ZX_PLANE = [0.0, 1.0, 0.0, 0.0]
 
 
+def norm(vector):
+    return np.linalg.norm(vector)
+
+
+def is_zero_vector(vector):
+    return np.isclose(norm(vector), 0.0, atol=1e-5)
+
+
 def unit_vector(vector):
-    assert not np.isclose(np.linalg.norm(vector), 0.0, atol=1e-5)
+    assert not is_zero_vector(vector)
     return vector / np.linalg.norm(vector)
 
 
@@ -22,6 +30,11 @@ def is_on_axis(vector):
 def middle_point(p1, p2):
     assert len(p1) == len(p2)
     return ((np.array(p1) + np.array(p2)) / 2).tolist()
+
+
+def average_point(*p, **kwargs):
+    p = np.array(p)
+    return np.average(p, weights=kwargs.get('weights', None), axis=0)
 
 
 def distance_between_points(p1, p2):
@@ -153,6 +166,7 @@ def nearest_distance(point, vector, target_point):
 
 def angle_between_vectors(v1, v2, degrees=False):
     assert len(v1) == len(v2)
+    assert not (is_zero_vector(v1) and is_zero_vector(v2))
     c = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     theta = np.arccos(min(max(c, -1), 1))
     if degrees:
@@ -171,6 +185,7 @@ def vector_projection(v1, v2):
         v_project (numpy.array):
     '''
     assert len(v1) == len(v2)
+    assert not is_zero_vector(v2)
     norm_square = np.power(np.linalg.norm(v2), 2)
     dot = np.dot(v1, v2)
     return dot / norm_square * np.array(v2)
@@ -439,7 +454,8 @@ def point_on_circle(point, circle):
         assert len(circle) >= 2
         center, radius = circle[:2]
         assert len(center) == 3
-        return np.isclose(distance_between_points(center, point), radius, atol=1e-5)
+        return (np.isclose(distance_between_points(center, point), radius, atol=1e-5) and
+                point_on_plane(point, circle[2]))
 
     if len(point) == 2:
         return two_dim()
