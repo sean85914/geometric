@@ -323,6 +323,23 @@ def intersection_between_lines(line_1, line_2):
     assert False
 
 
+def intersection_between_line_segments(line_1_points, line_2_points):
+    assert np.array(line_1_points).shape[0] == 2
+    assert np.array(line_2_points).shape[0] == 2
+    dim = len(line_1_points[0])
+    line_1 = line_from_two_points(line_1_points[0], line_1_points[1])
+    line_2 = line_from_two_points(line_2_points[0], line_2_points[1])
+    try:
+        point = intersection_between_lines(line_1, line_2)
+        t = (point[0] - line_1_points[0][0]) / (line_1_points[1][0] - line_1_points[0][0])
+        s = (point[0] - line_2_points[0][0]) / (line_2_points[1][0] - line_2_points[0][0])
+        if 0 <= t <= 1 and 0 <= s <= 1:
+            return point
+        return [float('nan')] * dim
+    except AssertionError:
+        return [float('nan')] * dim
+
+
 def line_from_planes(plane_1, plane_2):
     assert len(plane_1) == 4 and len(plane_2) == 4
     normal_1 = np.array(plane_1)[:3]
@@ -388,6 +405,74 @@ def circle_from_three_points(p1, p2, p3):
     elif len(p2) == 3:
         return three_dim()
     assert False
+
+
+def circle_from_center_and_points(center, p1, p2):
+    def two_dim():
+        return center, distance_between_points(center, p1), XY_PLANE
+
+    def three_dim():
+        return center, distance_between_points(center, p1), plane_from_three_points(center, p1, p2)
+
+    assert len(center) == len(p1) == len(p2)
+    assert np.isclose(distance_between_points(center, p1), distance_between_points(center, p2), atol=1e-5)
+    if len(center) == 2:
+        return two_dim()
+    elif len(center) == 3:
+        return three_dim()
+    assert False
+
+
+def arc_from_center_and_endpoints(center, p1, p2):
+    def two_dim():
+        center_, radius, _ = circle_from_center_and_points(center, p1, p2)
+        vec_1 = np.array(p1) - np.array(center)
+        vec_2 = np.array(p2) - np.array(center)
+        theta_1 = angle_between_vectors(vec_1, [1, 0])
+        theta_2 = angle_between_vectors(vec_2, [1, 0])
+        thetas = [theta_1, theta_2]
+        thetas.sort()
+        T = np.eye(3)
+        T[:2, 2] = center_
+        return center, radius, thetas, T
+
+    def three_dim():
+        center_, radius, plane = circle_from_center_and_points(center, p1, p2)
+        vec_1 = np.array(p1) - np.array(center)
+        vec_2 = np.array(p2) - np.array(center)
+        z_axis = unit_vector(plane[:3])
+        x_axis = unit_vector(vec_1)
+        y_axis = np.cross(z_axis, x_axis)
+        T = np.eye(4)  # convert position in new coordinate into original coordinate
+        T[:3, :3] = np.vstack([x_axis, y_axis, z_axis]).T
+        T[:3, 3] = center_
+        theta_2 = angle_between_vectors(vec_1, vec_2)
+        return center, radius, [0, theta_2], T
+
+    assert len(center) == len(p1) == len(p2)
+    assert np.isclose(distance_between_points(center, p1), distance_between_points(center, p2), atol=1e-5)
+    if len(center) == 2:
+        return two_dim()
+    elif len(center) == 3:
+        return three_dim()
+    assert False
+
+
+def generate_points_on_circle(center, radius, transform, num):
+    pass
+    # TODO
+
+
+def generate_points_on_arc(center, radius, theta_range, transform, num=50):
+    thetas = np.linspace(theta_range[0], theta_range[1], num)
+    points = []
+    for theta in thetas:
+        p = [0.0] * len(center)
+        p[0] = radius * np.cos(theta)
+        p[1] = radius * np.sin(theta)
+        p.append(1.0)
+        points.append((transform @ p)[:len(center)])
+    return np.array(points)
 
 
 def intersection_between_line_and_circle(line, circle):
