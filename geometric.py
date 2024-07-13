@@ -85,6 +85,46 @@ def line_from_two_points(p1, p2):
     assert False
 
 
+def random_point_on_line(line):
+    assert len(line) == 3
+    length = norm(line[:2])
+    line = np.array(line) / length
+    on_axis, index = is_on_axis(line[:2])
+    r = np.random.uniform(-1., 1.)
+    if on_axis:
+        p = [0., 0.]
+        random_index = 0 if index == 1 else 1
+        p[random_index] = r
+        p[index] = -line[2] / line[index]
+    else:
+        y = -(line[0] * r + line[2]) / line[1]
+        p = [r, y]
+    return p
+
+
+def random_point_on_plane(plane):
+    assert len(plane) == 4
+    length = norm(plane[:3])
+    plane = np.array(plane) / length
+    on_axis, index = is_on_axis(plane[:3])
+    r1 = np.random.uniform(-1., 1.)
+    r2 = np.random.uniform(-1., 1.)
+    p = [0.0] * 3
+    zero_index = np.where(plane[:3] == 0)[0]
+    if len(zero_index) == 0:
+        p[0] = r1
+        p[1] = r2
+        p[2] = -(plane[0] * r1 + plane[1] * r2 + plane[3]) / plane[2]
+    else:
+        index = zero_index[0]
+        index_1 = (index + 1) % 3
+        index_2 = (index + 2) % 3
+        p[index] = r1
+        p[index_1] = r2
+        p[index_2] = -(plane[3] + plane[index_1] * r2) / plane[index_2]
+    return p
+
+
 def plane_from_three_points(p1, p2, p3):
     assert len(p1) == len(p2) == len(p3) == 3
     v1 = np.array(p2) - np.array(p1)
@@ -423,6 +463,21 @@ def circle_from_center_and_points(center, p1, p2):
     assert False
 
 
+def circle_coordinate_transform(center, plane, x_direction_point=None):
+    assert len(center) == 3 and len(plane) == 4
+    if x_direction_point:
+        assert len(x_direction_point) == 3
+    else:
+        x_direction_point = random_point_on_plane(plane)
+    z_axis = unit_vector(plane[:3])
+    x_axis = unit_vector(np.array(x_direction_point) - np.array(center))
+    y_axis = np.cross(z_axis, x_axis)
+    T = np.eye(4)  # convert position in new coordinate into original coordinate
+    T[:3, :3] = np.vstack([x_axis, y_axis, z_axis]).T
+    T[:3, 3] = center
+    return T
+
+
 def arc_from_center_and_endpoints(center, p1, p2):
     def two_dim():
         center_, radius, _ = circle_from_center_and_points(center, p1, p2)
@@ -440,12 +495,7 @@ def arc_from_center_and_endpoints(center, p1, p2):
         center_, radius, plane = circle_from_center_and_points(center, p1, p2)
         vec_1 = np.array(p1) - np.array(center)
         vec_2 = np.array(p2) - np.array(center)
-        z_axis = unit_vector(plane[:3])
-        x_axis = unit_vector(vec_1)
-        y_axis = np.cross(z_axis, x_axis)
-        T = np.eye(4)  # convert position in new coordinate into original coordinate
-        T[:3, :3] = np.vstack([x_axis, y_axis, z_axis]).T
-        T[:3, 3] = center_
+        T = circle_coordinate_transform(center, plane, p1)
         theta_2 = angle_between_vectors(vec_1, vec_2)
         return center, radius, [0, theta_2], T
 
@@ -458,9 +508,33 @@ def arc_from_center_and_endpoints(center, p1, p2):
     assert False
 
 
-def generate_points_on_circle(center, radius, transform, num):
-    pass
-    # TODO
+def generate_points_on_circle(circle, num=50):
+    def two_dim():
+        points = []
+        for theta in np.linspace(0, 2 * np.pi, num):
+            p = [
+                center[0] + radius * np.cos(theta),
+                center[1] + radius * np.sin(theta),
+            ]
+            points.append(p)
+        return np.array(points)
+
+    def three_dim():
+        points = []
+        T = circle_coordinate_transform(center, plane)
+        for theta in np.linspace(0, 2 * np.pi, num):
+            p = [radius * np.cos(theta), radius * np.sin(theta), 0.0, 1.0]
+            points.append((T @ p)[:3])
+        return np.array(points)
+
+    assert len(circle) == 3
+    center, radius, plane = circle
+    assert len(center) + 1 == len(plane)
+    if len(center) == 2:
+        return two_dim()
+    elif len(center) == 3:
+        return three_dim()
+    assert False
 
 
 def generate_points_on_arc(center, radius, theta_range, transform, num=50):
@@ -502,13 +576,7 @@ def intersection_between_line_and_circle(line, circle):
             p = point_from_plane_and_line(plane, line)
             if np.isclose(distance_between_points(p, center), radius, atol=1e-5):
                 return [p]
-        z_axis = unit_vector(plane[:3])
-        x_axis = unit_vector(line[1])
-        y_axis = np.cross(z_axis, x_axis)
-        origin = center
-        T = np.eye(4)  # convert position in new coordinate into original coordinate
-        T[:3, :3] = np.vstack([x_axis, y_axis, z_axis]).T
-        T[:3, 3] = origin
+        T = circle_coordinate_transform(center, plane, np.array(center) + np.array(line[1]))
         T_ = np.linalg.inv(T)  # convert position in original coordinate into new coordinate
         p_new = (T_ @ np.append(line[0], 1))[:2]  # remove z
         circle_new = [[0.0, 0.0], radius, XY_PLANE]
