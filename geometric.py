@@ -7,19 +7,58 @@ ZX_PLANE = [0.0, 1.0, 0.0, 0.0]
 
 
 def norm(vector):
+    '''Calculate the norm of a given vector.
+
+    Arguments:
+        vector (list or array-like): the vector to compute the norm
+
+    Return:
+        norm (float): the norm of the vector
+    '''
     return np.linalg.norm(vector)
 
 
 def is_zero_vector(vector):
+    '''Check if a given vector is a zero vector within a specified tolerance.
+
+    Arguments:
+        vector (list or array-like): the vector to check
+
+    Return:
+        result (bool): True if the vector is a zero vector, False otherwise
+    '''
     return np.isclose(norm(vector), 0.0, atol=1e-5)
 
 
 def unit_vector(vector):
-    assert not is_zero_vector(vector)
+    '''Calculate the normalized vector of a given vector.
+
+    Arguments:
+        vector (list or array-like): the vector to normalized
+
+    Return:
+        unit (list or array-like): the unit vector of the given vector
+
+    Raise:
+        AssertionError: if the input vector is a zero vector
+    '''
+    assert not is_zero_vector(vector), 'input vector is a zero vector'
     return vector / np.linalg.norm(vector)
 
 
 def is_on_axis(vector):
+    '''Check if a given vector lies on one of the coordinate axes.
+
+    Arguments:
+        vector (list or array-like): the vector to check
+
+    Return:
+        on_axis (bool): True if the vector lies on one of the coordinate axes, False otherwise.
+        index (int): the index of the axis if the vector lies on an axis, -1 otherwise.
+
+    Raise:
+        AssertionError: if the input vector is a zero vector
+    '''
     unit = unit_vector(vector)
     for idx, component in enumerate(unit):
         if np.isclose(abs(component), 1.0, atol=1e-5):
@@ -28,21 +67,75 @@ def is_on_axis(vector):
 
 
 def middle_point(p1, p2):
-    assert len(p1) == len(p2)
-    return ((np.array(p1) + np.array(p2)) / 2).tolist()
+    '''Calculate the middle point between two points in the same dimensional space.
+
+    Arguments:
+        p1 (list or array-like): the first point.
+        p2 (list or array-like): the second point.
+
+    Returns:
+        middle (numpy.ndarray): the coordinates of the middle point.
+
+    Raises:
+        AssertionError: if the two points do not have the same dimensions.
+    '''
+    assert len(p1) == len(p2), 'Two points do not have the same dimensions'
+    return (np.array(p1) + np.array(p2)) / 2
 
 
 def average_point(*p, **kwargs):
+    '''Calculate the weighted average point of given points.
+
+    Arguments:
+        *p (array-like): a variable number of points
+        **kwargs: Optional keyword arguments
+            - weights (array-like, optional): The weights associated with each point. Default is None
+
+    Returns:
+        average: the coordinates of the average point.
+
+    Raises:
+        ValueError: if the dimensions of the input points or weights do not match,
+                    or if weights contain any invalid values.
+    '''
     p = np.array(p)
     return np.average(p, weights=kwargs.get('weights', None), axis=0)
 
 
 def distance_between_points(p1, p2):
-    assert len(p1) == len(p2)
+    '''Calculate the Euclidean distance between two points.
+
+    Arguments:
+        p1 (list or array-like): the first point
+        p2 (list or array-like): the second point
+
+    Returns:
+        distance (float): the Euclidean distance between the two points
+
+    Raises:
+        AssertionError: if the two points do not have the same dimensions
+    '''
+    assert len(p1) == len(p2), 'Two points do not have the same dimensions'
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
 
 def line_from_point_vector(point, vector):
+    '''Generate the equation of a line in 2D or 3D space given a point on the line and its direction vector.
+
+    Arguments:
+        point (list or array-like): a point on the line
+        vector (list or array-like): the direction vector of the line
+
+    Returns:
+        - 2D
+            coeffients (list): the coefficients of the line equation, ax + by + c = 0
+        - 3D
+            point (list): the point which on the line
+            vector (numpy.ndarray): normalized direction vector
+
+    Raises:
+        AssertionError: if the dimensions of the point and vector do not match the expected dimensions (2 or 3).
+    '''
     def two_dim():
         assert len(point) == len(vector) == 2
         a, b = point
@@ -52,16 +145,32 @@ def line_from_point_vector(point, vector):
 
     def three_dim():
         assert len(point) == len(vector) == 3
-        return [point, unit_vector(vector).tolist()]
+        return [point, unit_vector(vector)]
 
     if len(point) == 2:
         return two_dim()
     elif len(point) == 3:
         return three_dim()
-    assert False
+    assert False, 'Point and vector dimensions must be either 2 or 3'
 
 
 def line_from_two_points(p1, p2):
+    '''Generate the equation of a line in 2D or 3D space passing through two given points.
+
+    Arguments:
+        p1 (list or array-like): coordinates of the first point
+        p2 (list or array-like): coordinates of the second point
+
+    Returns:
+        - 2D
+            coeffients (list): the coefficients of the line equation, ax + by + c = 0
+        - 3D
+            point (list): the point which on the line
+            vector (numpy.ndarray): normalized direction vector
+
+    Raise:
+        AssertionError: if the dimensions of the points do not match the expected dimensions (2D or 3D).
+    '''
     def two_dim():
         assert len(p1) == len(p2) == 2
         a1, b1 = p1
@@ -82,28 +191,129 @@ def line_from_two_points(p1, p2):
         return two_dim()
     elif len(p1) == 3:
         return three_dim()
-    assert False
+    assert False, 'Points dimensions must be either 2 or 3'
 
 
 def random_point_on_line(line):
-    assert len(line) == 3
-    length = norm(line[:2])
-    line = np.array(line) / length
-    on_axis, index = is_on_axis(line[:2])
-    r = np.random.uniform(-1., 1.)
-    if on_axis:
-        p = [0., 0.]
-        random_index = 0 if index == 1 else 1
-        p[random_index] = r
-        p[index] = -line[2] / line[index]
-    else:
-        y = -(line[0] * r + line[2]) / line[1]
-        p = [r, y]
-    return p
+    '''Generate a random point on a line in 2D or 3D space.
+
+    Arguments:
+        - 2D
+            coeffients (list or array-like): the coefficients of the line equation, ax + by + c = 0
+        - 3D
+            point (list or array-like): the point which on the line
+            vector (list or array-like): normalized direction vector
+
+    Returns:
+        point (numpy.ndarray): coordinates of a random point on the line.
+
+    Raises:
+        AssertionError: if the dimensions of the line do not match the expected dimensions (2D or 3D).
+    '''
+    def two_dim():
+        length = norm(line[:2])
+        normalized = np.array(line) / length
+        on_axis, index = is_on_axis(normalized[:2])
+        r = np.random.uniform(-1., 1.)
+        if on_axis:
+            p = [0., 0.]
+            random_index = 0 if index == 1 else 1
+            p[random_index] = r
+            p[index] = -normalized[2] / normalized[index]
+        else:
+            y = -(normalized[0] * r + normalized[2]) / normalized[1]
+            p = [r, y]
+        return np.array(p)
+
+    def three_dim():
+        t = np.random.uniform(-1., 1.)
+        return np.array(line[0]) + t * np.array(line[1])
+
+    if len(line) == 3:
+        return two_dim()
+    elif len(line) == 2 and len(line[0]) == len(line[1]) == 3:
+        return three_dim()
+    assert False, 'Line dimensions must be either 2D or 3D'
+
+
+def is_point_on_line(point, line):
+    def two_dim():
+        x, y = point
+        return np.isclose(np.dot(line, [x, y, 1.0]), 0, atol=1e-5)
+
+    def three_dim():
+        line_point = line[0]
+        vector = line[1]
+        direction = np.array(point) - np.array(line_point)
+        if np.isclose(np.linalg.norm(direction), 0, atol=1e-5):
+            return True
+        angle = angle_between_vectors(direction, vector)
+        return np.isclose(angle, 0, atol=1e-5) or np.isclose(angle, np.pi, atol=1e-5)
+
+    if len(line) == 3 and len(point) == 2:
+        return two_dim()
+    elif len(line) == 2 and len(line[0]) == 3 and len(point) == 3:
+        return three_dim()
+    assert False
+
+
+def plane_from_three_points(p1, p2, p3):
+    '''Calculate the plane equation from three points in 3D space.
+
+    Arguments:
+        p1 (list or array-like): coordinates of the first point
+        p2 (list or array-like): coordinates of the second point
+        p3 (list or array-like): coordinates of the third point
+
+    Returns:
+        coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+
+    Raises:
+        AssertionError: if the dimensions of the points are not equal to 3,
+                        or if the points are collinear.
+    '''
+    assert len(p1) == len(p2) == len(p3) == 3, 'Points must be in 3D'
+    v1 = np.array(p2) - np.array(p1)
+    v2 = np.array(p3) - np.array(p1)
+    normal = np.cross(v1, v2)
+    assert not np.isclose(np.linalg.norm(normal), 0, atol=1e-5), 'Given points are collinear'
+    normal = unit_vector(normal)
+    const = np.dot(normal, p1)
+    nx, ny, nz = normal
+    return [nx, ny, nz, -const]
+
+
+def plane_from_point_vector(point, vector):
+    '''Generate the plane equation in 3D space given a point on the plane and its normal vector.
+
+    Arguments:
+        point (list or array-like): a point on the plane
+        vector (list or array-like): the normal vector to the plane
+
+    Returns:
+        coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+
+    Raises:
+        AssertionError: if the dimensions of the point and vector are not equal to 3.
+    '''
+    assert len(point) == len(vector) == 3, 'Invalid point or vector'
+    vector = unit_vector(vector)
+    return np.array(np.append(vector, -np.dot(vector, point))).tolist()
 
 
 def random_point_on_plane(plane):
-    assert len(plane) == 4
+    '''Generate a random point on a plane in 3D space.
+
+    Arguments:
+        plane (list or array-like): the coefficients of the plane equation in the form ax + by + cz + d = 0
+
+    Returns:
+        point (numpy.ndarray): coordinates of a random point on the plane
+
+    Raises:
+        AssertionError: if the input plane is invalid
+    '''
+    assert len(plane) == 4, 'Input plane is invalid'
     length = norm(plane[:3])
     plane = np.array(plane) / length
     on_axis, index = is_on_axis(plane[:3])
@@ -125,25 +335,22 @@ def random_point_on_plane(plane):
     return p
 
 
-def plane_from_three_points(p1, p2, p3):
-    assert len(p1) == len(p2) == len(p3) == 3
-    v1 = np.array(p2) - np.array(p1)
-    v2 = np.array(p3) - np.array(p1)
-    normal = np.cross(v1, v2)
-    assert not np.isclose(np.linalg.norm(normal), 0, atol=1e-5)
-    normal = unit_vector(normal)
-    const = np.dot(normal, p1)
-    nx, ny, nz = normal
-    return [nx, ny, nz, -const]
-
-
-def plane_from_point_vector(point, vector):
-    assert len(point) == len(vector) == 3
-    vector = unit_vector(vector)
-    return np.array(np.append(vector, -np.dot(vector, point))).tolist()
-
-
 def perpendicular_bisector(p1, p2):
+    '''Calculate the perpendicular bisector of a line segment in 2D or 3D space.
+
+    Parameters:
+        p1 (list or array-like): coordinates of the first endpoint of the line segment.
+        p2 (list or array-like): coordinates of the second endpoint of the line segment.
+
+    Returns:
+        - 2D
+            coeffients (list): the coefficients of the line equation, ax + by + c = 0
+        - 3D
+            coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+
+    Raises:
+        AssertionError: if the dimensions of the points do not match the expected dimensions (2D or 3D).
+    '''
     def two_dim():
         mp = middle_point(p1, p2)
         vector = np.array(p2) - np.array(p1)
@@ -159,7 +366,7 @@ def perpendicular_bisector(p1, p2):
         return two_dim()
     elif len(p1) == 3:
         return three_dim()
-    assert False
+    assert False, 'Points dimensions must be either 2D or 3D'
 
 
 def angle_bisector(line_1, line_2):
@@ -201,12 +408,26 @@ def nearest_distance(point, vector, target_point):
         dist (float): the shortest distance between the line and the target point
     '''
     n_point = nearest_point(point, vector, target_point)
-    return np.linalg.norm(n_point - np.array(target_point))
+    return distance_between_points(n_point, target_point)
 
 
 def angle_between_vectors(v1, v2, degrees=False):
-    assert len(v1) == len(v2)
-    assert not (is_zero_vector(v1) and is_zero_vector(v2))
+    '''Calculate the angle between two vectors in radians or degrees.
+
+    Arguments:
+        v1 (list or array-like): first vector
+        v2 (list or array-like): second vector
+        degrees (bool, optional): if True, return the angle in degrees. Default is False (radians).
+
+    Returns:
+        float: angle between v1 and v2
+
+    Raises:
+        AssertionError: if the dimensions of v1 and v2 are not equal,
+                        or if both vectors are zero vectors.
+    '''
+    assert len(v1) == len(v2), 'Vectors must have the same dimension'
+    assert not (is_zero_vector(v1) and is_zero_vector(v2)), 'Vectors must not both be zero vectors'
     c = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     theta = np.arccos(min(max(c, -1), 1))
     if degrees:
@@ -219,13 +440,17 @@ def vector_projection(v1, v2):
 
     Arguments:
         v1 (list or array-like): vector to be projected
-        v2 (list or array-like):
+        v2 (list or array-like): vector onto which v1 is projected
 
     Return:
-        v_project (numpy.array):
+        v_project (numpy.array): projection of v1 onto v2
+
+    Raises:
+        AssertionError: if the dimensions of v1 and v2 are not equal,
+                        or if v2 is a zero vector.
     '''
-    assert len(v1) == len(v2)
-    assert not is_zero_vector(v2)
+    assert len(v1) == len(v2), 'Vectors must have the same dimension'
+    assert not is_zero_vector(v2), 'v2 must not be a zero vector'
     norm_square = np.power(np.linalg.norm(v2), 2)
     dot = np.dot(v1, v2)
     return dot / norm_square * np.array(v2)
@@ -235,48 +460,30 @@ def project_vector_on_plane(v, normal):
     '''Project a vector, v, onto a plane represented by its normal vector.
 
     Arguments:
-        v (list or array-like):
+        v (list or array-like): vector to be projected.
         normal (list or array-like): normal vector of the plane
 
     Return:
-        v_project (numpy.array):
+        v_project (numpy.array): projection of v onto the plane
+
+    Raises:
+        AssertionError: if the dimensions of v and normal are not equal, or if they are not in 3D space
     '''
-    assert len(v) == len(normal) == 3
+    assert len(v) == len(normal) == 3, 'Vectors must be in 3D space'
     v_parallel = vector_projection(v, normal)
     return v - v_parallel
 
 
-def point_on_line(point, line):
-    def two_dim():
-        x, y = point
-        return np.isclose(np.dot(line, [x, y, 1.0]), 0, atol=1e-5)
-
-    def three_dim():
-        line_point = line[0]
-        vector = line[1]
-        direction = np.array(point) - np.array(line_point)
-        if np.isclose(np.linalg.norm(direction), 0, atol=1e-5):
-            return True
-        angle = angle_between_vectors(direction, vector)
-        return np.isclose(angle, 0, atol=1e-5) or np.isclose(angle, np.pi, atol=1e-5)
-
-    if len(line) == 3 and len(point) == 2:
-        return two_dim()
-    elif len(line) == 2 and len(line[0]) == 3 and len(point) == 3:
-        return three_dim()
-    assert False
-
-
-def point_on_plane(point, plane):
+def is_point_on_plane(point, plane):
     assert len(plane) == 4 and len(point) == 3
     x, y, z = point
     return np.isclose(np.dot(plane, [x, y, z, 1.0]), 0, atol=1e-5)
 
 
-def line_on_plane(line, plane):
+def is_line_on_plane(line, plane):
     assert np.array(line).shape == (2, 3) and len(plane) == 4
     point, vector = line
-    if np.isclose(np.dot(vector, plane[:3]), 0.0, atol=1e-5) and point_on_plane(point, plane):
+    if np.isclose(np.dot(vector, plane[:3]), 0.0, atol=1e-5) and is_point_on_plane(point, plane):
         return True
     return False
 
@@ -572,7 +779,7 @@ def intersection_between_line_and_circle(line, circle):
         assert len(circle) == 3
         center, radius, plane = circle
         assert len(center) == 3 and len(plane) == 4
-        if not line_on_plane(line, plane):
+        if not is_line_on_plane(line, plane):
             p = point_from_plane_and_line(plane, line)
             if np.isclose(distance_between_points(p, center), radius, atol=1e-5):
                 return [p]
@@ -596,7 +803,7 @@ def intersection_between_line_and_circle(line, circle):
     assert False
 
 
-def point_on_circle(point, circle):
+def is_point_on_circle(point, circle):
     def two_dim():
         assert len(circle) >= 2
         center, radius = circle[:2]
@@ -608,7 +815,7 @@ def point_on_circle(point, circle):
         center, radius = circle[:2]
         assert len(center) == 3
         return (np.isclose(distance_between_points(center, point), radius, atol=1e-5) and
-                point_on_plane(point, circle[2]))
+                is_point_on_plane(point, circle[2]))
 
     if len(point) == 2:
         return two_dim()
