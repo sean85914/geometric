@@ -132,7 +132,7 @@ def line_from_point_vector(point, vector):
             coeffients (list): the coefficients of the line equation, ax + by + c = 0
         - 3D
             point (list): the point which on the line
-            vector (numpy.ndarray): normalized direction vector
+            vector (list): normalized direction vector
 
     Raises:
         AssertionError: if the dimensions of the point and vector do not match the expected dimensions (2 or 3).
@@ -146,7 +146,7 @@ def line_from_point_vector(point, vector):
 
     def three_dim():
         assert len(point) == len(vector) == 3
-        return [point, unit_vector(vector)]
+        return [point, unit_vector(vector).tolist()]
 
     if len(point) == 2:
         return two_dim()
@@ -385,9 +385,67 @@ def perpendicular_bisector(p1, p2):
     assert False, 'Points dimensions must be either 2D or 3D'
 
 
-def angle_bisector(line_1, line_2):
-    pass
-    # TODO
+def angle_bisector_line_from_two_lines(line_1, line_2):
+    def two_dim():
+        try:
+            _ = intersection_between_lines(line_1, line_2)
+        except AssertionError:
+            raise AssertionError('Two lines are parallel') from None
+        unit_line_1 = np.array(line_1) / norm(line_1[:2])
+        unit_line_2 = np.array(line_2) / norm(line_2[:2])
+        bisector_line_1 = unit_vector(unit_line_1 + unit_line_2)
+        bisector_line_2 = unit_vector(unit_line_1 - unit_line_2)
+        return bisector_line_1, bisector_line_2
+
+    def three_dim():
+        try:
+            point = intersection_between_lines(line_1, line_2)
+        except AssertionError:
+            raise AssertionError('Two lines are not intersect at one point') from None
+        _1 = np.array(line_1[1])
+        _2 = np.array(line_2[1])
+        bisector_line_1 = unit_vector(_1 + _2)
+        bisector_line_2 = unit_vector(_1 - _2)
+        return line_from_point_vector(point, bisector_line_1), \
+            line_from_point_vector(point, bisector_line_2),
+
+    if len(line_1) == 3 and len(line_2) == 3:
+        return two_dim()
+    elif np.array(line_1).shape == (2, 3) and np.array(line_2).shape == (2, 3):
+        return three_dim()
+    else:
+        assert False, 'Invalid lines'
+
+
+def angle_bisector_plane_from_two_lines(line_1, line_2):
+    assert np.array(line_1).shape == (2, 3) and np.array(line_2).shape == (2, 3), \
+           'Invalid lines'
+    try:
+        point = intersection_between_lines(line_1, line_2)
+    except AssertionError:
+        raise AssertionError('Two lines are not intersect at one point') from None
+    _1 = np.array(line_1[1])
+    _2 = np.array(line_2[1])
+    n = np.cross(_1, _2)
+    bisector_line_1 = _1 + _2
+    bisector_line_2 = _1 - _2
+    bisector_plane_1 = unit_vector(np.cross(n, bisector_line_1))
+    bisector_plane_2 = unit_vector(np.cross(n, bisector_line_2))
+    return plane_from_point_vector(point, bisector_plane_1), \
+        plane_from_point_vector(point, bisector_plane_2)
+
+
+def angle_bisector_plane_from_two_planes(plane_1, plane_2):
+    assert len(plane_1) == len(plane_2) == 4, 'Invalid planes'
+    try:
+        _ = line_from_planes(plane_1, plane_2)
+    except AssertionError:
+        raise AssertionError('Two planes are not intersect at a line')
+    unit_plane_1 = np.array(plane_1) / norm(plane_1[:3])
+    unit_plane_2 = np.array(plane_2) / norm(plane_2[:3])
+    bisector_plane_1 = unit_vector(unit_plane_1 + unit_plane_2)
+    bisector_plane_2 = unit_vector(unit_plane_1 - unit_plane_2)
+    return bisector_plane_1, bisector_plane_2
 
 
 def nearest_point(point, vector, target_point):
@@ -666,7 +724,7 @@ def intersection_between_lines(line_1, line_2):
         point (numpy.ndarray): the intersection point
 
     Raises:
-        AssertionError: If the lines are parallel (in 2D) or do not intersect (in 3D).
+        AssertionError: if the lines are parallel (in 2D) or do not intersect (in 3D).
     '''
     def two_dim():
         assert len(line_1) == len(line_2) == 3
@@ -700,6 +758,7 @@ def intersection_between_lines(line_1, line_2):
         residual = lstsq_result[1][0]
         if np.isclose(residual, 0.0, atol=1e-5):
             return (np.array([x1, y1, z1]) + np.array([a1, b1, c1]) * t).tolist()
+        assert False, 'Two lines are not intersect'
 
     if len(line_1) == 3:
         return two_dim()
@@ -1198,4 +1257,6 @@ def is_point_on_circle(point, circle):
         return three_dim()
     assert False
 
-# is point on arc
+
+def is_point_on_arc(point, arc):
+    pass
