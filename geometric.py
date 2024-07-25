@@ -618,6 +618,7 @@ def project_point_on_line(p, line):
 
     def three_dim():
         pass
+        # TODO
 
     if len(p) == 2:
         return two_dim()
@@ -1067,18 +1068,34 @@ def arc_from_center_and_endpoints(center, p1, p2):
 
 
 def arc_from_three_points(p1, p2, p3):
-    pass
+    def two_dim():
+        line_1 = perpendicular_bisector(p1, p2)
+        line_2 = perpendicular_bisector(p1, p3)
+        center = intersection_between_lines(line_1, line_2)
+        return arc_from_center_and_endpoints(center, p1, p3)
+
+    def three_dim():
+        plane_1 = perpendicular_bisector(p1, p2)
+        plane_2 = perpendicular_bisector(p1, p3)
+        plane_3 = plane_from_three_points(p1, p2, p3)
+        center = point_from_three_planes(plane_1, plane_2, plane_3)
+        return arc_from_center_and_endpoints(center, p1, p3)
+
+    if len(p1) == 2:
+        return two_dim()
+    elif len(p1) == 3:
+        return three_dim()
+    assert False
 
 
-def generate_points_on_circle(circle, num=50):
+def generate_points_on_circle(center, radius, plane, num=50):
     '''Generate `num` points on a circle given its center and radius.
 
     Arguments:
-        circle (tuple):
-            - center (list or array-like): coordinates of the circle's center
-            - radius (float): radius of the circle
-            - plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies on.
-                                          For 2D, this term is neglectable.
+        center (list or array-like): coordinates of the circle's center
+        radius (float): radius of the circle
+        plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies on.
+                                    For 2D, this term is neglectable.
         num (int, optional): number of points to generate on the circle, default is 50
 
     Returns:
@@ -1106,9 +1123,7 @@ def generate_points_on_circle(circle, num=50):
             points.append((T @ p)[:3])
         return np.array(points)
 
-    assert len(circle) == 3
-    center, radius, plane = circle
-    assert radius > 0
+    assert radius > 0, 'Radius should be positive'
     if len(center) == 2:
         return two_dim()
     elif len(center) == 3:
@@ -1212,7 +1227,7 @@ def intersection_between_line_and_circle(line, circle):
         return intersection_points_origin
 
     assert len(circle) in [2, 3]
-    assert circle[1] > 0
+    assert circle[1] > 0, 'Radius should be positive'
     if len(line) == 3:
         return two_dim()
     elif len(line) == 2:
@@ -1259,4 +1274,78 @@ def is_point_on_circle(point, circle):
 
 
 def is_point_on_arc(point, arc):
-    pass
+    '''Determines if a point lies on a given arc.
+
+    Arguments:
+        point (list or array-like): coordinates of the point to check
+        arc (tuple): contains center, radius, theta_range, and transform.
+            - center (numpy.ndarray): center of the arc
+            - radius (float): radius of the arc
+            - thetas (list): angle range of the arc
+                - 2D: angle is relative to X-axis
+                - 3D: angle is relative to the direction of `center` to `p1`
+            - T (numpy.ndarray): transformation matrix to convert arc coordinates.
+                - 2D: the matrix is with shape 3x3
+                - 3D: the matrix is with shape 4x4
+
+    Returns:
+        result (bool): True if the point is on the arc, False otherwise
+
+    Raises:
+        AssertionError: if the dimensions of the inputs are not consistent.
+        AssertionError: if the length of arc is incorrect
+        AssertionError: if the radius is negative
+    '''
+    def two_dim():
+        theta = angle_between_vectors([1, 0], np.array(point) - np.array(center))
+        if theta_range[0] <= theta <= theta_range[1]:
+            return True
+        return False
+
+    def three_dim():
+        # TODO
+        pass
+
+    assert len(arc) == 4, 'Arc should contain center, radius, theta_range and transform'
+    center, radius, theta_range, T = arc
+    assert len(point) == len(center), 'Dimension of point and center is not consistent'
+    shape = (len(point) + 1, len(point) + 1)
+    assert np.array(T).shape == shape, \
+           f'Shape of transform expected to be {shape}, got {np.array(T).shape}'
+    assert radius > 0, 'Radius should be positive'
+
+    if not np.isclose(distance_between_points(point, center), radius, atol=1e-5):
+        return False
+    if len(point) == 2:
+        return two_dim()
+    elif len(point) == 3:
+        return three_dim()
+    assert False
+
+
+def is_point_in_triangle(p, p1, p2, p3):
+    '''Determine the relation between `p` and the triangle formed by `p1`, `p2` and `p3`.
+
+    Arguments:
+        p (list or array-like): coordinates of the point to check
+        p1 (list or array-like): coordinates of the first vertex of the triangle
+        p2 (list or array-like): coordinates of the second vertex of the triangle
+        p3 (list or array-like): coordinates of the third vertex of the triangle
+
+    Return:
+        result (int): 1 if `p` is inside the triangle, 0 if on the boarder and -1 if outside
+
+    Raise:
+        AssertionError: if the dimensions of the points are not consistent.
+    '''
+    assert len(p) == len(p1) == len(p2) == len(p3), 'Dimension of points are not consistent'
+    v1 = np.array(p2) - np.array(p1)
+    v2 = np.array(p3) - np.array(p1)
+    v = np.array(p) - np.array(p1)
+    s = np.dot(v1, v) / norm(v1) ** 2
+    t = np.dot(v2, v) / norm(v2) ** 2
+    if s > 0 and t > 0 and s + t < 1:
+        return 1
+    elif s == 0 or t == 0 or s + t == 1:
+        return 0
+    return -1
