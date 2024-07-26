@@ -460,6 +460,8 @@ def nearest_point(point, vector, target_point):
 
     Return:
         nearest_point (numpy.array): the nearest point on the line
+
+    See also: `project_point_on_line`
     '''
     assert len(point) == len(vector) == len(target_point)
     norm = np.power(np.linalg.norm(vector), 2)
@@ -605,6 +607,8 @@ def project_point_on_line(p, line):
 
     Raises:
         AssertionError: If the dimensions of `p` and `line` do not match the expected dimensions.
+
+    See also: `nearest_point`
     '''
     def two_dim():
         assert len(line) == 3
@@ -617,8 +621,9 @@ def project_point_on_line(p, line):
         return np.array([x_p, y_p])
 
     def three_dim():
-        pass
-        # TODO
+        assert np.array(line).shape == (2, 3)
+        point, vector = line
+        return nearest_point(point, vector, p)
 
     if len(p) == 2:
         return two_dim()
