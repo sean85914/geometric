@@ -1,3 +1,4 @@
+import re
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
@@ -19,12 +20,49 @@ class Pose:
         return f'Translation: {self.translation}, rotation: {self.rotation}'
 
     @property
+    def matrix(self):
+        return self._T
+
+    @property
     def translation(self):
         return self._translation
+
+    def set_translation(self, trans):
+        assert len(trans) == 3
+        self._translation = self._translation
+        self._T[:3, 3] = trans
 
     @property
     def rotation(self):
         return self._rotation
+
+    def set_rotation_from_matrix(self, rot):
+        assert np.array(rot).shape == (3, 3)
+        self._rotation = R.from_matrix(rot).as_matrix()
+        self._T[:3, :3] = self._rotation
+
+    def set_rotation_from_rotvec(self, rv):
+        assert len(rv) == 3
+        self._rotation = R.from_rotvec(rv).as_matrix()
+        self._T[:3, :3] = self._rotation
+
+    def set_rotation_from_quaternion(self, quat):
+        assert len(quat) == 4
+        self._rotation = R.from_quat(quat).as_matrix()
+        self._T[:3, :3] = self._rotation
+
+    def set_rotation_from_axis_angle(self, axis, angle):
+        assert len(axis) == 3 and isinstance(angle, float)
+        axis = np.array(axis)
+        unit_axis = axis / np.linalg.norm(axis)
+        rv = unit_axis * angle
+        self.set_rotation_from_rotvec(rv)
+
+    def set_rotation_from_euler(self, angles, sequence):
+        assert len(angles) == 3
+        assert re.search('([x-zX-Z]){3}', sequence) and (sequence.islower() or sequence.isupper())
+        self._rotation = R.from_euler(sequence, angles).as_matrix()
+        self._T[:3, :3] = self._rotation
 
     def __matmul__(self, rhs):
         assert isinstance(rhs, Pose)
@@ -46,7 +84,7 @@ class Pose:
     @staticmethod
     def random_pose():
         trans = np.random.rand(3)
-        rot = np.random.rand(3)
+        rot = (np.random.rand(3)) * np.random.uniform(0, np.pi)
         return Pose(trans, rot)
 
     @staticmethod
