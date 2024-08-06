@@ -29,7 +29,7 @@ class Pose:
 
     def set_translation(self, trans):
         assert len(trans) == 3
-        self._translation = self._translation
+        self._translation = trans
         self._T[:3, 3] = trans
 
     @property
@@ -38,18 +38,21 @@ class Pose:
 
     def set_rotation_from_matrix(self, rot):
         assert np.array(rot).shape == (3, 3)
-        self._rotation = R.from_matrix(rot).as_matrix()
-        self._T[:3, :3] = self._rotation
+        r = R.from_matrix(rot)
+        self._rotation = r.as_rotvec()
+        self._T[:3, :3] = r.as_matrix()
 
     def set_rotation_from_rotvec(self, rv):
         assert len(rv) == 3
-        self._rotation = R.from_rotvec(rv).as_matrix()
-        self._T[:3, :3] = self._rotation
+        r = R.from_rotvec(rv)
+        self._rotation = rv
+        self._T[:3, :3] = r.as_matrix()
 
     def set_rotation_from_quaternion(self, quat):
         assert len(quat) == 4
-        self._rotation = R.from_quat(quat).as_matrix()
-        self._T[:3, :3] = self._rotation
+        r = R.from_quat(quat)
+        self._rotation = r.as_rotvec()
+        self._T[:3, :3] = r.as_matrix()
 
     def set_rotation_from_axis_angle(self, axis, angle):
         assert len(axis) == 3 and isinstance(angle, float)
@@ -61,8 +64,9 @@ class Pose:
     def set_rotation_from_euler(self, angles, sequence):
         assert len(angles) == 3
         assert re.search('([x-zX-Z]){3}', sequence) and (sequence.islower() or sequence.isupper())
-        self._rotation = R.from_euler(sequence, angles).as_matrix()
-        self._T[:3, :3] = self._rotation
+        r = R.from_euler(sequence, angles)
+        self._rotation = r.as_rotvec()
+        self._T[:3, :3] = r.as_matrix()
 
     def __matmul__(self, rhs):
         assert isinstance(rhs, Pose)
