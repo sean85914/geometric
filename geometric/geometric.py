@@ -987,6 +987,49 @@ def circle_from_center_and_points(center, p1, p2):
     assert False
 
 
+def circle_from_noised_data(data):
+    '''Calculate the circle given by noised data.
+
+    Arguments:
+        data (list or array-like): sampled noised data, should with shape either (N, 2) or (N, 3).
+                                   N should greater than or equal to 4.
+
+    Returns:
+        tuple:
+          - center (numpy.ndarray): coordinates of the circle's center
+          - radius (float): radius of the circle
+          - plane (list): plane coefficient [a, b, c, d] which the circle lies on.
+                          For 2D, this term is neglectable and XY plane is returned
+
+    Raise:
+        AssertionError: if N less then 4
+        AssertionError: if the dimension of the point is not 2 nor 3
+    '''
+    def two_dim():
+        A = np.ones((len(data), 3))
+        b = np.zeros((len(data), 1))
+        for i in range(len(data)):
+            A[i, 0] = data[i, 0]  # xi
+            A[i, 1] = data[i, 1]  # yi
+            b[i, 0] = -(data[i, 0]**2 + data[i, 1]**2)
+        x, _, _, _ = np.linalg.lstsq(A, b, None)
+        xc = -x[0, 0] / 2
+        yc = -x[1, 0] / 2
+        radius = np.sqrt(xc**2 + yc**2 - x[2, 0])
+        return (xc, yc), radius, XY_PLANE
+
+    def three_dim():
+        raise NotImplementedError()
+
+    data = np.array(data)
+    assert data.shape[0] >= 4, 'Should with at least 4 data points to determine the parameters of the circle'
+    if data.shape[1] == 2:
+        return two_dim()
+    elif data.shape[1] == 3:
+        return three_dim()
+    assert False
+
+
 def circle_coordinate_transform(center, plane, x_direction_point=None):
     '''Calculate the transformation matrix from a new coordinate system to the original one. The circle is centered
     at origin and lies in XY plane (Z=0).
@@ -1047,10 +1090,9 @@ def arc_from_center_and_endpoints(center, p1, p2):
         center_, radius, _ = circle_from_center_and_points(center, p1, p2)
         vec_1 = np.array(p1) - np.array(center)
         vec_2 = np.array(p2) - np.array(center)
-        theta_1 = angle_between_vectors(vec_1, [1, 0])
-        theta_2 = angle_between_vectors(vec_2, [1, 0])
+        theta_1 = np.arctan2(vec_1[1], vec_1[0])
+        theta_2 = np.arctan2(vec_2[1], vec_2[0])
         thetas = [theta_1, theta_2]
-        thetas.sort()
         T = np.eye(3)
         T[:2, 2] = center_
         return center, radius, thetas, T
