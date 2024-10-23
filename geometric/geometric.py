@@ -1389,6 +1389,7 @@ def is_point_in_triangle(p, p1, p2, p3):
     v1 = np.array(p2) - np.array(p1)
     v2 = np.array(p3) - np.array(p1)
     v = np.array(p) - np.array(p1)
+    # v = s * v1 + t * v2
     s = np.dot(v1, v) / norm(v1) ** 2
     t = np.dot(v2, v) / norm(v2) ** 2
     if s > 0 and t > 0 and s + t < 1:
@@ -1396,3 +1397,21 @@ def is_point_in_triangle(p, p1, p2, p3):
     elif s == 0 or t == 0 or s + t == 1:
         return 0
     return -1
+
+
+def spherical_cap_volume(radius, height):
+    assert radius > 0, "Radius should be non-negative"
+    assert height >= 0, "Height should be greater than or equal to 0"
+    assert height < 2 * radius, "Height should not greater than two times of radius"
+    return np.pi * height ** 2 * (3 * radius - height) / 3
+
+
+def overlap_volume_between_spheres(sphere1, sphere2):
+    assert len(sphere1) == 2 and len(sphere2) == 2, "Invalid sphere input"
+    assert len(sphere1[0]) == 3 and len(sphere2[0]) == 3, "Invalid sphere input"
+    assert sphere1[1] > 0 and sphere2[1] > 0, "Invalid sphere input"
+    d = distance_between_points(sphere1[0], sphere2[0])
+    r1, r2 = sphere1[1], sphere2[1]
+    if d >= r1 + r2:
+        return 0
+    return np.pi * (r1 + r2 - d)**2 * (d**2 + 2 * d * (r1 + r2) - 3 * (r1 - r2)**2) / (12 * d)

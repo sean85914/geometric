@@ -20,3 +20,5 @@ $$z=c+tk$$, where  $$\sqrt{r^2+s^2+t^2}=1,k\in\mathbb{R}$$
   * `[a, b, c, d]` for $$ax+by+cz+d=0$$, where $$\sqrt{a^2+b^2+c^2}=1$$
 * Circle
   * `[[x_c, y_c, z_c], r, [a, b, c, d]]` for circle lies in plane `[a, b, c, d]`, center at `[x_c, y_c, z_c]` and with radius `r`
+* Sphere
+  * `[[a, b, c], r]` for sphere center at `[a, b, c]` and with radius `r`
