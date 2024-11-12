@@ -19,6 +19,10 @@ class Pose:
     def __str__(self):
         return f'Translation: {self.translation}, rotation: {self.rotation}'
 
+    def __eq__(self, rhs):
+        assert isinstance(rhs, Pose)
+        return np.allclose(self.matrix, rhs.matrix)
+
     @property
     def matrix(self):
         return self._T
@@ -117,7 +121,7 @@ class Pose:
         -> diff = this.inv @ rhs
         '''
         assert isinstance(rhs, Pose)
-        return Pose.from_matrix(self.inv @ rhs)
+        return Pose.from_matrix((self.inv @ rhs).matrix)
 
     def interpolate(self, target_pose, num):
         '''  0    ...      num - 1
