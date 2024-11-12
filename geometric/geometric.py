@@ -318,8 +318,19 @@ def plane_from_point_vector(point, vector):
 
 
 def plane_from_noise_data(points):
-    pass
-    # TODO
+    points = np.array(points)
+    assert points.shape[1] == 3
+    assert points.shape[0] > 3
+    A = np.ones((points.shape[0], 3))
+    b = np.ones((points.shape[0], 1))
+    for i in range(points.shape[0]):
+        A[i, 0] = points[i, 0]
+        A[i, 1] = points[i, 1]
+        b[i, 0] = points[i, 2]
+    x = np.linalg.inv(A.T @ A) @ A.T @ b
+    a, b, c = x.flatten()
+    # z = ax + by + c, or ax + by - z + c = 0
+    return (np.array([a, b, -1, c]) / norm([a, b, -1])).tolist()
 
 
 def random_point_on_plane(plane):
