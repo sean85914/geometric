@@ -317,6 +317,11 @@ def plane_from_point_vector(point, vector):
     return np.array(np.append(vector, -np.dot(vector, point))).tolist()
 
 
+def plane_from_noise_data(points):
+    pass
+    # TODO
+
+
 def random_point_on_plane(plane):
     '''Generate a random point on a plane in 3D space.
 
@@ -850,6 +855,36 @@ def line_from_planes(plane_1, plane_2):
         point[indices[0]] = _1
         point[indices[1]] = _2
         return [point, vector.tolist()]
+
+    assert False
+
+
+def line_from_noise_data(points):
+    def two_dim():
+        A = np.ones((points.shape[0], 2))
+        b = np.ones((points.shape[0], 1))
+        for i in range(points.shape[0]):
+            A[i, 0] = points[i, 0]
+            b[i, 0] = points[i, 1]
+        x = np.linalg.inv(A.T @ A) @ A.T @ b
+        a, b = x.flatten()
+        # y = ax + b, or ax - y + b = 0
+        return (np.array([a, -1, b]) / norm([a, -1])).tolist()
+
+    def three_dim():
+        center = np.mean(points, axis=0)
+        pc = points - center
+        cov = np.cov(pc, rowvar=False)
+        eigenvalues, eigenvectors = np.linalg.eig(cov)
+        max_eigen_index = np.argmax(eigenvalues)
+        direction_vec = eigenvectors[:, max_eigen_index]
+        return [center.tolist(), direction_vec.tolist()]
+
+    points = np.array(points)
+    if points.shape[1] == 2:
+        return two_dim()
+    elif points.shape[1] == 3:
+        return three_dim()
 
     assert False
 
