@@ -38,7 +38,7 @@ def unit_vector(vector):
         vector (list or array-like): the vector to normalized
 
     Return:
-        unit (list or array-like): the unit vector of the given vector
+        unit (numpy.ndarray): the unit vector of the given vector
 
     Raise:
         AssertionError: if the input vector is a zero vector
@@ -525,6 +525,30 @@ def angle_between_vectors(v1, v2, degrees=False):
     if degrees:
         return np.degrees(theta)
     return theta
+
+
+def orthogonal_vector(v):
+    '''Return a unit vector (randomly, for n >= 3) that is orthogonal to the input vector.
+
+    Arguments:
+        v (list or array-like): input vector
+
+    Returns:
+        ov (numpy.ndarray): unit vector that is orthogonal to the input vector
+
+    Raises:
+        AssertionError: if input vector is 1D
+        AssertionError: if input is zero vector
+    '''
+    assert len(v) > 1, 'Input vector should at least with 2D'
+    assert norm(v) > 0, 'Input should not be zero vector'
+    if len(v) == 2:
+        v1, v2 = v
+        return unit_vector([v2, -v1])
+    result = np.random.rand(len(v))
+    acc = np.dot(v[:-1], result[:-1])
+    result[-1] = -acc / v[-1]
+    return unit_vector(result)
 
 
 def vector_projection(v1, v2):
@@ -1426,12 +1450,15 @@ def is_point_in_triangle(p, p1, p2, p3):
         p3 (list or array-like): coordinates of the third vertex of the triangle
 
     Return:
-        result (int): 1 if `p` is inside the triangle, 0 if on the boarder and -1 if outside
+        result (int): 1 if `p` is inside the triangle, 0 if on the boarder and -1 if outside.
+                      For 3D case, -2 if p not in plane formed by p1, p2 and p3.
 
     Raise:
         AssertionError: if the dimensions of the points are not consistent.
     '''
     assert len(p) == len(p1) == len(p2) == len(p3), 'Dimension of points are not consistent'
+    if len(p) == 3 and not is_line_on_plane(p, plane_from_three_points(p1, p2, p3)):
+        return -2
     v1 = np.array(p2) - np.array(p1)
     v2 = np.array(p3) - np.array(p1)
     v = np.array(p) - np.array(p1)
