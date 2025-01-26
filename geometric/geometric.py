@@ -1,6 +1,8 @@
 import numpy as np
 import warnings
 
+from .relation_enum import (PointTriangleEnum, PointCircleEnum, PointCylinderEnum)
+
 
 XY_PLANE = [0.0, 0.0, 1.0, 0.0]
 YZ_PLANE = [1.0, 0.0, 0.0, 0.0]
@@ -1022,13 +1024,14 @@ def circle_from_three_points(p1, p2, p3):
     assert False
 
 
-def circle_from_center_and_points(center, p1, p2):
+def circle_from_center_and_points(center, p1, p2=None):
     '''Calculate the circle given its center and two points on its circumference.
 
     Arguments:
         center (list or array-like): coordinates of the circle's center
         p1 (list or array-like): coordinates of the first point on the circumference
         p2 (list or array-like): coordinates of the second point on the circumference
+                                 neglectable for 2D case
 
     Returns:
         tuple:
@@ -1048,11 +1051,12 @@ def circle_from_center_and_points(center, p1, p2):
     def three_dim():
         return center, distance_between_points(center, p1), plane_from_three_points(center, p1, p2)
 
-    assert len(center) == len(p1) == len(p2)
-    assert np.isclose(distance_between_points(center, p1), distance_between_points(center, p2), atol=1e-5)
     if len(center) == 2:
+        assert len(center) == len(p1)
         return two_dim()
     elif len(center) == 3:
+        assert len(center) == len(p1) == len(p2)
+        assert np.isclose(distance_between_points(center, p1), distance_between_points(center, p2), atol=1e-5)
         return three_dim()
     assert False
 
@@ -1352,8 +1356,8 @@ def intersection_between_line_and_circle(line, circle):
     assert False
 
 
-def is_point_on_circle(point, circle):
-    '''Check if a point lies on a circle in 2D or 3D space.
+def point_circle_relation(point, circle):
+    '''Get relation between a point and a circle.
 
     Args:
         point (list or array-like): point coordinates to check.
@@ -1365,23 +1369,37 @@ def is_point_on_circle(point, circle):
 
     Returns:
         on_circle (bool): True if the point lies on the circle, False otherwise
+        relation (enum.Enum): enumeration as following
+                              0: if the point is inside the circle
+                              1: if the point is on the border of the circle
+                              2: if the point is outside the circle
+                              3: if the point is not on the plane of the circle (3D only)
 
     Raises:
         AssertionError: if the dimensions of center, radius, or plane (only in 3D) are incorrect.
         AssertionError: if got negative radius
     '''
+    def _compare_distance(point, center, radius):
+        dist = distance_between_points(center, point)
+        if np.isclose(dist, radius, atol=1e-5):
+            return PointCircleEnum.ON_BORDER
+        elif dist < radius:
+            return PointCircleEnum.INSIDE
+        return PointCircleEnum.OUTSIDE
+
     def two_dim():
         assert len(circle) >= 2
         center, radius = circle[:2]
         assert len(center) == 2
-        return np.isclose(distance_between_points(center, point), radius, atol=1e-5)
+        return _compare_distance(point, center, radius)
 
     def three_dim():
         assert len(circle) == 3
         center, radius, plane = circle
         assert len(center) == 3 and len(plane) == 4 and radius > 0
-        return (np.isclose(distance_between_points(center, point), radius, atol=1e-5) and
-                is_point_on_plane(point, plane))
+        if not is_point_on_plane(point, plane):
+            return PointCircleEnum.NOT_IN_PLANE
+        return _compare_distance(point, center, radius)
 
     if len(point) == 2:
         return two_dim()
@@ -1440,7 +1458,7 @@ def is_point_on_arc(point, arc):
     assert False
 
 
-def is_point_in_triangle(p, p1, p2, p3):
+def point_triangle_relation(p, p1, p2, p3):
     '''Determine the relation between `p` and the triangle formed by `p1`, `p2` and `p3`.
 
     Arguments:
@@ -1450,15 +1468,18 @@ def is_point_in_triangle(p, p1, p2, p3):
         p3 (list or array-like): coordinates of the third vertex of the triangle
 
     Return:
-        result (int): 1 if `p` is inside the triangle, 0 if on the boarder and -1 if outside.
-                      For 3D case, -2 if p not in plane formed by p1, p2 and p3.
+        result (enum.Enum): enumeration as following
+                            0: if point is inside the triangle
+                            1: if point in on the border of the triangle
+                            2: if point is outside the triangle
+                            3: if point is not in the plane formed by three vertices (3D only)
 
     Raise:
         AssertionError: if the dimensions of the points are not consistent.
     '''
     assert len(p) == len(p1) == len(p2) == len(p3), 'Dimension of points are not consistent'
     if len(p) == 3 and not is_line_on_plane(p, plane_from_three_points(p1, p2, p3)):
-        return -2
+        return PointTriangleEnum.NOT_IN_PLANE
     v1 = np.array(p2) - np.array(p1)
     v2 = np.array(p3) - np.array(p1)
     v = np.array(p) - np.array(p1)
@@ -1466,10 +1487,42 @@ def is_point_in_triangle(p, p1, p2, p3):
     s = np.dot(v1, v) / norm(v1) ** 2
     t = np.dot(v2, v) / norm(v2) ** 2
     if s > 0 and t > 0 and s + t < 1:
-        return 1
+        return PointTriangleEnum.INSIDE
     elif s == 0 or t == 0 or s + t == 1:
-        return 0
-    return -1
+        return PointTriangleEnum.ON_BORDER
+    return PointTriangleEnum.OUTSIDE
+
+
+def point_cylinder_relation(p, cylinder):
+    assert len(cylinder) == 4, 'Invalid cylinder'
+    assert len(cylinder[0]) == len(cylinder[3]) == 3, 'First and fourth data should be with length 3'
+    assert cylinder[2] > 0, 'Radius should be positive'
+    bottom_center, radius, height, direction = cylinder
+    direction = unit_vector(direction)
+    ov = orthogonal_vector(direction)
+    ov2 = np.cross(direction, ov)
+    axis_line = line_from_point_vector(cylinder[0], cylinder[3])
+    bottom_circle_point1 = np.array(bottom_center) + ov * radius
+    bottom_circle_point2 = np.array(bottom_center) + ov2 * radius
+    bottom_circle = circle_from_center_and_points(bottom_center, bottom_circle_point1, bottom_circle_point2)
+    top_center = np.array(bottom_center) + direction * height
+    top_circle_point1 = np.array(top_center) + ov * radius
+    top_circle_point2 = np.array(top_center) + ov2 * radius
+    top_circle = circle_from_center_and_points(top_center, top_circle_point1, top_circle_point2)
+    if (point_circle_relation(p, bottom_circle) in [PointCircleEnum.INSIDE, PointCircleEnum.ON_BORDER] or
+            point_circle_relation(p, top_circle) in [PointCircleEnum.INSIDE, PointCircleEnum.ON_BORDER]):
+        return PointCylinderEnum.ON_BORDER
+    if np.isclose(
+            distance_point_to_plane(p, bottom_circle[2]) + distance_point_to_plane(p, top_circle[2]),
+            height,
+            atol=1e-5):
+        dist = distance_point_to_line(p, axis_line)
+        if np.isclose(dist, radius, atol=1e-5):
+            return PointCylinderEnum.ON_BORDER
+        elif dist < radius:
+            return PointCylinderEnum.INSIDE
+        return PointCylinderEnum.OUTSIDE
+    return PointCylinderEnum.OUTSIDE
 
 
 def spherical_cap_volume(radius, height):
