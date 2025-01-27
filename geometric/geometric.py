@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 
-from .relation_enum import (PointTriangleEnum, PointCircleEnum, PointCylinderEnum)
+from .relation_enum import (PointTriangleEnum, PointCircleEnum, PointShapeEnum)
 
 
 XY_PLANE = [0.0, 0.0, 1.0, 0.0]
@@ -1511,18 +1511,18 @@ def point_cylinder_relation(p, cylinder):
     top_circle = circle_from_center_and_points(top_center, top_circle_point1, top_circle_point2)
     if (point_circle_relation(p, bottom_circle) in [PointCircleEnum.INSIDE, PointCircleEnum.ON_BORDER] or
             point_circle_relation(p, top_circle) in [PointCircleEnum.INSIDE, PointCircleEnum.ON_BORDER]):
-        return PointCylinderEnum.ON_BORDER
+        return PointShapeEnum.ON_BORDER
     if np.isclose(
             distance_point_to_plane(p, bottom_circle[2]) + distance_point_to_plane(p, top_circle[2]),
             height,
             atol=1e-5):
         dist = distance_point_to_line(p, axis_line)
         if np.isclose(dist, radius, atol=1e-5):
-            return PointCylinderEnum.ON_BORDER
+            return PointShapeEnum.ON_BORDER
         elif dist < radius:
-            return PointCylinderEnum.INSIDE
-        return PointCylinderEnum.OUTSIDE
-    return PointCylinderEnum.OUTSIDE
+            return PointShapeEnum.INSIDE
+        return PointShapeEnum.OUTSIDE
+    return PointShapeEnum.OUTSIDE
 
 
 def spherical_cap_volume(radius, height):
@@ -1541,3 +1541,63 @@ def overlap_volume_between_spheres(sphere1, sphere2):
     if d >= r1 + r2:
         return 0
     return np.pi * (r1 + r2 - d)**2 * (d**2 + 2 * d * (r1 + r2) - 3 * (r1 - r2)**2) / (12 * d)
+
+
+def random_point_on_sphere(sphere):
+    assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3
+    center, radius = sphere
+    theta = np.random.random() * 2 * np.pi  # azimuth
+    u = np.random.random()
+    phi = np.arccos(1 - 2 * u)  # zenith
+    return np.array(center) + spherical_to_cartesian((radius, theta, phi))
+
+
+def point_sphere_relation(point, sphere):
+    assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3 and len(point) == 3
+    center, radius = sphere
+    dist = distance_between_points(point, center)
+    if np.isclose(dist, radius, atol=1e-5):
+        return PointShapeEnum.ON_BORDER
+    elif dist < radius:
+        return PointShapeEnum.INSIDE
+    return PointShapeEnum.OUTSIDE
+
+
+def cartesian_to_spherical(point):
+    assert len(point) == 3
+    x, y, z = point
+    radius = norm(point)
+    assert not np.isclose(radius, 0.0, atol=1e-5)
+    if np.isclose(x, 0.0, atol=1e-5) and np.isclose(y, 0.0, atol=1e-5):
+        theta = 0.0
+        if z > 0:
+            phi = 0.0
+        else:
+            phi = np.pi
+    else:
+        theta = np.arctan2(y, x)
+        phi = np.arctan2(x, z * np.cos(theta))
+    return np.array([radius, theta, phi])
+
+
+def spherical_to_cartesian(point):
+    assert len(point) == 3
+    radius, azimuth, zenith = point
+    assert radius >= 0 and 0 <= azimuth < 2 * np.pi and 0 <= zenith <= np.pi
+    return np.array([
+        radius * np.cos(azimuth) * np.sin(zenith),
+        radius * np.sin(azimuth) * np.sin(zenith),
+        radius * np.cos(zenith)
+    ])
+
+
+def distance_between_points_on_sphere(p1, p2, sphere):
+    assert len(p1) == len(p2) == 3
+    assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3
+    assert point_sphere_relation(p1, sphere) == PointShapeEnum.ON_BORDER
+    assert point_sphere_relation(p2, sphere) == PointShapeEnum.ON_BORDER
+    center, radius = sphere
+    v1 = np.array(p1) - np.array(center)
+    v2 = np.array(p2) - np.array(center)
+    angle = angle_between_vectors(v1, v2)
+    return radius * angle

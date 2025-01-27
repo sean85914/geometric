@@ -15,7 +15,7 @@ class PointCircleEnum(Enum):
     NOT_IN_PLANE = 3  # 3D
 
 
-class PointCylinderEnum(Enum):
+class PointShapeEnum(Enum):
     INSIDE = 0
     ON_BORDER = 1
     OUTSIDE = 2
