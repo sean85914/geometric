@@ -1576,7 +1576,7 @@ def cartesian_to_spherical(point):
             phi = np.pi
     else:
         theta = np.arctan2(y, x)
-        phi = np.arctan2(x, z * np.cos(theta))
+        phi = np.arccos(z / radius)
     return np.array([radius, theta, phi])
 
 
