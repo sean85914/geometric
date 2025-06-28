@@ -13,10 +13,10 @@ def norm(vector):
     '''Calculate the norm of a given vector.
 
     Arguments:
-        vector (list or array-like): the vector to compute the norm
+        vector (list or array-like): The vector to compute the norm
 
     Return:
-        norm (float): the norm of the vector
+        float: The norm of the vector
     '''
     return np.linalg.norm(vector)
 
@@ -25,10 +25,10 @@ def is_zero_vector(vector):
     '''Check if a given vector is a zero vector within a specified tolerance.
 
     Arguments:
-        vector (list or array-like): the vector to check
+        vector (list or array-like): The vector to check
 
     Return:
-        result (bool): True if the vector is a zero vector, False otherwise
+        bool: True if the vector is a zero vector, False otherwise
     '''
     return np.isclose(norm(vector), 0.0, atol=1e-5)
 
@@ -37,13 +37,13 @@ def unit_vector(vector):
     '''Calculate the normalized vector of a given vector.
 
     Arguments:
-        vector (list or array-like): the vector to normalized
+        vector (list or array-like): The vector to normalized
 
     Return:
-        unit (numpy.ndarray): the unit vector of the given vector
+        numpy.ndarray: The unit vector of the given vector
 
     Raise:
-        AssertionError: if the input vector is a zero vector
+        AssertionError: If the input vector is a zero vector
     '''
     assert not is_zero_vector(vector), 'input vector is a zero vector'
     return vector / np.linalg.norm(vector)
@@ -53,14 +53,19 @@ def is_on_axis(vector):
     '''Check if a given vector lies on one of the coordinate axes.
 
     Arguments:
-        vector (list or array-like): the vector to check
+        vector (list or array-like): The vector to check
 
     Return:
-        on_axis (bool): True if the vector lies on one of the coordinate axes, False otherwise.
-        index (int): the index of the axis if the vector lies on an axis, -1 otherwise.
+        tuple: A tuple containing
+
+        - bool: True if the vector lies on one of the coordinate axes, False otherwise.
+        - int: The index of the axis if the vector lies on an axis, -1 otherwise.
 
     Raise:
-        AssertionError: if the input vector is a zero vector
+        AssertionError: If the input vector is a zero vector
+
+    Note:
+        0 for X, 1 for Y and 2 for Z
     '''
     unit = unit_vector(vector)
     for idx, component in enumerate(unit):
@@ -73,14 +78,14 @@ def middle_point(p1, p2):
     '''Calculate the middle point between two points in the same dimensional space.
 
     Arguments:
-        p1 (list or array-like): the first point.
-        p2 (list or array-like): the second point.
+        p1 (list or array-like): The first point.
+        p2 (list or array-like): The second point.
 
     Returns:
-        middle (numpy.ndarray): the coordinates of the middle point.
+        numpy.ndarray: The coordinates of the middle point.
 
     Raises:
-        AssertionError: if the two points do not have the same dimensions.
+        AssertionError: If the two points do not have the same dimensions.
     '''
     assert len(p1) == len(p2), 'Two points do not have the same dimensions'
     return (np.array(p1) + np.array(p2)) / 2
@@ -90,15 +95,16 @@ def average_point(*p, **kwargs):
     '''Calculate the weighted average point of given points.
 
     Arguments:
-        *p (array-like): a variable number of points
-        **kwargs: Optional keyword arguments
+        p (array-like): A variable number of points
+        kwargs (dict): Optional keyword arguments
+
             - weights (array-like, optional): The weights associated with each point. Default is None
 
     Returns:
-        average: the coordinates of the average point.
+        numpy.ndarray: The coordinates of the average point.
 
     Raises:
-        ValueError: if the dimensions of the input points or weights do not match,
+        ValueError: If the dimensions of the input points or weights do not match,
                     or if weights contain any invalid values.
     '''
     p = np.array(p)
@@ -109,14 +115,14 @@ def distance_between_points(p1, p2):
     '''Calculate the Euclidean distance between two points.
 
     Arguments:
-        p1 (list or array-like): the first point
-        p2 (list or array-like): the second point
+        p1 (list or array-like): The first point
+        p2 (list or array-like): The second point
 
     Returns:
-        distance (float): the Euclidean distance between the two points
+        float: The Euclidean distance between the two points
 
     Raises:
-        AssertionError: if the two points do not have the same dimensions
+        AssertionError: If the two points do not have the same dimensions
     '''
     assert len(p1) == len(p2), 'Two points do not have the same dimensions'
     return np.linalg.norm(np.array(p1) - np.array(p2))
@@ -126,18 +132,18 @@ def line_from_point_vector(point, vector):
     '''Generate the equation of a line in 2D or 3D space given a point on the line and its direction vector.
 
     Arguments:
-        point (list or array-like): a point on the line
-        vector (list or array-like): the direction vector of the line
+        point (list or array-like): A point on the line
+        vector (list or array-like): The direction vector of the line
 
     Returns:
         - 2D
-            coeffients (list): the coefficients of the line equation, ax + by + c = 0
+            - list: The coefficients of the line equation, :math:`ax + by + c = 0`
         - 3D
-            point (list): the point which on the line
-            vector (list): normalized direction vector
+            - list: The point which on the line
+            - list: Normalized direction vector
 
     Raises:
-        AssertionError: if the dimensions of the point and vector do not match the expected dimensions (2 or 3).
+        AssertionError: If the dimensions of the point and vector do not match the expected dimensions (2 or 3).
     '''
     def two_dim():
         assert len(point) == len(vector) == 2
@@ -161,18 +167,18 @@ def line_from_two_points(p1, p2):
     '''Generate the equation of a line in 2D or 3D space passing through two given points.
 
     Arguments:
-        p1 (list or array-like): coordinates of the first point
-        p2 (list or array-like): coordinates of the second point
+        p1 (list or array-like): Coordinates of the first point
+        p2 (list or array-like): Coordinates of the second point
 
     Returns:
         - 2D
-            coeffients (list): the coefficients of the line equation, ax + by + c = 0
+            - list: The coefficients of the line equation, :math:`ax + by + c = 0`
         - 3D
-            point (list): the point which on the line
-            vector (numpy.ndarray): normalized direction vector
+            - list: The point which on the line
+            - list: Normalized direction vector
 
     Raise:
-        AssertionError: if the dimensions of the points do not match the expected dimensions (2D or 3D).
+        AssertionError: If the dimensions of the points do not match the expected dimensions (2D or 3D).
     '''
     def two_dim():
         assert len(p1) == len(p2) == 2
@@ -200,18 +206,23 @@ def line_from_two_points(p1, p2):
 def random_point_on_line(line):
     '''Generate a random point on a line in 2D or 3D space.
 
+    The function accepts two formats for the input `line`:
+
+    (1) 2D line
+        A list or array-like of three coefficients [a, b, c], representing the line equation :math:`ax + by + c = 0`.
+    (2) 3D line: A list or array-like of two elements:
+
+        - `line[0]`: A 3D point on the line.
+        - `line[1]`: A normalized direction vector of the line.
+
     Arguments:
-        - 2D
-            coeffients (list or array-like): the coefficients of the line equation, ax + by + c = 0
-        - 3D
-            point (list or array-like): the point which on the line
-            vector (list or array-like): normalized direction vector
+        line (list or array-like): Representation of the line, either 2D ([a, b, c]) or 3D ([point, vector]).
 
     Returns:
-        point (numpy.ndarray): coordinates of a random point on the line.
+        numpy.ndarray: Coordinates of a random point on the line.
 
     Raises:
-        AssertionError: if the dimensions of the line do not match the expected dimensions (2D or 3D).
+        AssertionError: If the dimensions of the line do not match the expected dimensions (2D or 3D).
     '''
     def two_dim():
         length = norm(line[:2])
@@ -243,17 +254,19 @@ def is_point_on_line(point, line):
     '''Check if a point lies on a given line in 2D or 3D space.
 
     Arguments:
-        point (list or array-like): coordinates of the point to be checked.
-        line (list or array-like): representation of the line:
-            - 2D: the coefficients of the line equation, ax + by + c = 0
-            - 3D: [[x1, y1, z1], [vx, vy, vz]] where [x1, y1, z1] is a point on the line
-                  and [vx, vy, vz] is the direction vector of the line
+        point (list or array-like): Coordinates of the point to be checked.
+        line (list or array-like): Representation of the line:
+
+            (1) 2D: the coefficients of the line equation, :math:`ax + by + c = 0`
+
+            (2) 3D: ``[[x1, y1, z1], [vx, vy, vz]]`` where ``[x1, y1, z1]`` is a point on the line
+                and ``[vx, vy, vz]`` is the direction vector of the line
 
     Returns:
-        on_line (bool): True if the point lies on the line, False otherwise.
+        bool: True if the point lies on the line, False otherwise.
 
     Raises:
-        AssertionError: if the dimensions of the point and line do not match the expected dimensions
+        AssertionError: If the dimensions of the point and line do not match the expected dimensions
     '''
     def two_dim():
         x, y = point
@@ -279,15 +292,15 @@ def plane_from_three_points(p1, p2, p3):
     '''Calculate the plane equation from three points in 3D space.
 
     Arguments:
-        p1 (list or array-like): coordinates of the first point
-        p2 (list or array-like): coordinates of the second point
-        p3 (list or array-like): coordinates of the third point
+        p1 (list or array-like): Coordinates of the first point
+        p2 (list or array-like): Coordinates of the second point
+        p3 (list or array-like): Coordinates of the third point
 
     Returns:
-        coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+        list: The coefficients of the plane equation in the form :math:`ax + by + cz + d = 0`
 
     Raises:
-        AssertionError: if the dimensions of the points are not equal to 3,
+        AssertionError: If the dimensions of the points are not equal to 3,
                         or if the points are collinear.
     '''
     assert len(p1) == len(p2) == len(p3) == 3, 'Points must be in 3D'
@@ -305,21 +318,34 @@ def plane_from_point_vector(point, vector):
     '''Generate the plane equation in 3D space given a point on the plane and its normal vector.
 
     Arguments:
-        point (list or array-like): a point on the plane
-        vector (list or array-like): the normal vector to the plane
+        point (list or array-like): A point on the plane
+        vector (list or array-like): The normal vector to the plane
 
     Returns:
-        coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+        list: The coefficients of the plane equation in the form :math:`ax + by + cz + d = 0`
 
     Raises:
-        AssertionError: if the dimensions of the point and vector are not equal to 3.
+        AssertionError: If the dimensions of the point and vector are not equal to 3.
     '''
     assert len(point) == len(vector) == 3, 'Invalid point or vector'
     vector = unit_vector(vector)
     return np.array(np.append(vector, -np.dot(vector, point))).tolist()
 
 
-def plane_from_noise_data(points):
+def plane_from_noisy_data(points):
+    '''Estimate the best-fitting plane from a set of noisy 3D points using least squares method.
+
+    The plane is estimated in the form: :math:`ax + by + cz + d = 0`, with :math:`\\sqrt{a^2 + b^2 + c^2} = 1`.
+
+    Arguments:
+        points (array-like): A list or array of shape ``(N, 3)``, where N > 3, containing 3D points.
+
+    Returns:
+        list: Normalized plane coefficients ``[a, b, c, d]`` such that :math:`ax + by + cz + d = 0`.
+
+    Raises:
+        AssertionError: If the input does not contain at least 4 points or if points are not 3D.
+    '''
     points = np.array(points)
     assert points.shape[1] == 3
     assert points.shape[0] > 3
@@ -339,13 +365,13 @@ def random_point_on_plane(plane):
     '''Generate a random point on a plane in 3D space.
 
     Arguments:
-        plane (list or array-like): the coefficients of the plane equation in the form ax + by + cz + d = 0
+        plane (list or array-like): the coefficients of the plane equation in the form :math:`ax + by + cz + d = 0`
 
     Returns:
-        point (numpy.ndarray): coordinates of a random point on the plane
+        numpy.ndarray: Coordinates of a random point on the plane
 
     Raises:
-        AssertionError: if the input plane is invalid
+        AssertionError: If the input plane is invalid
     '''
     assert len(plane) == 4, 'Input plane is invalid'
     length = norm(plane[:3])
@@ -372,18 +398,20 @@ def random_point_on_plane(plane):
 def perpendicular_bisector(p1, p2):
     '''Calculate the perpendicular bisector of a line segment in 2D or 3D space.
 
-    Parameters:
-        p1 (list or array-like): coordinates of the first endpoint of the line segment.
-        p2 (list or array-like): coordinates of the second endpoint of the line segment.
+    The function determines the perpendicular bisector:
+
+    - In **2D**, it returns the line coefficients [a, b, c] of the equation: :math:`ax + by + c = 0`.
+    - In **3D**, it returns the plane coefficients [a, b, c, d] of the equation: :math:`ax + by + cz + d = 0`.
+
+    Arguments:
+        p1 (list or array-like): Coordinates of the first endpoint of the line segment.
+        p2 (list or array-like): Coordinates of the second endpoint of the line segment.
 
     Returns:
-        - 2D
-            coeffients (list): the coefficients of the line equation, ax + by + c = 0
-        - 3D
-            coefficients (list): the coefficients of the plane equation in the form ax + by + cz + d = 0
+        list: Coefficients of the perpendicular bisector line (2D) or plane (3D).
 
     Raises:
-        AssertionError: if the dimensions of the points do not match the expected dimensions (2D or 3D).
+        AssertionError: If the dimensions of the points do not match the expected dimensions (2D or 3D).
     '''
     def two_dim():
         mp = middle_point(p1, p2)
@@ -404,6 +432,24 @@ def perpendicular_bisector(p1, p2):
 
 
 def angle_bisector_line_from_two_lines(line_1, line_2):
+    '''Calculate the two angle bisector lines from two input lines in 2D or 3D space.
+
+    - In 2D: Each line is represented by coefficients [a, b, c] of the line equation :math:`ax + by + c = 0`.
+    - In 3D: Each line is represented by a list [point, direction_vector].
+
+    Arguments:
+        line_1 (list or array-like): First line, either 2D coefficients or 3D [point, vector].
+        line_2 (list or array-like): Second line, same format as `line_1`.
+
+    Returns:
+        tuple: A pair of bisector lines.
+
+            * In 2D, each is a list of coefficients [a, b, c].
+            * In 3D, each is a list [point, direction_vector].
+
+    Raises:
+        AssertionError: If the input lines are invalid or do not intersect (e.g., parallel lines).
+    '''
     def two_dim():
         try:
             _ = intersection_between_lines(line_1, line_2)
@@ -436,6 +482,21 @@ def angle_bisector_line_from_two_lines(line_1, line_2):
 
 
 def angle_bisector_plane_from_two_lines(line_1, line_2):
+    '''Compute the two angle bisector planes formed by two intersecting 3D lines.
+
+    Each line is defined by [point, direction_vector].
+
+    Arguments:
+        line_1 (list): First 3D line as [point, direction_vector].
+        line_2 (list): Second 3D line as [point, direction_vector].
+
+    Returns:
+        tuple: A pair of planes, each represented by coefficients [a, b, c, d] of the plane equation
+               :math:`ax + by + cz + d = 0`.
+
+    Raises:
+        AssertionError: If input lines are invalid or do not intersect.
+    '''
     assert np.array(line_1).shape == (2, 3) and np.array(line_2).shape == (2, 3), \
            'Invalid lines'
     try:
@@ -454,6 +515,20 @@ def angle_bisector_plane_from_two_lines(line_1, line_2):
 
 
 def angle_bisector_plane_from_two_planes(plane_1, plane_2):
+    '''Compute the two angle bisector planes formed by the intersection of two planes.
+
+    The result is two new planes whose normal vectors bisect the angle between the original planes.
+
+    Arguments:
+        plane_1 (list): First plane coefficients [a, b, c, d] of the equation :math:`ax + by + cz + d = 0`.
+        plane_2 (list): Second plane coefficients [a, b, c, d].
+
+    Returns:
+        tuple: A pair of normalized plane coefficients [a, b, c, d].
+
+    Raises:
+        AssertionError: If the input planes are invalid or do not intersect along a line.
+    '''
     assert len(plane_1) == len(plane_2) == 4, 'Invalid planes'
     try:
         _ = line_from_planes(plane_1, plane_2)
@@ -472,14 +547,15 @@ def nearest_point(point, vector, target_point):
     of the vector and the other point.
 
     Arguments:
-        point (list or array-like): coordinates of the point through which the line passes
-        vector (list or array-like): direction vector of the line
-        target_point (list or array-like): coordinates of the target point
+        point (list or array-like): Coordinates of the point through which the line passes
+        vector (list or array-like): Direction vector of the line
+        target_point (list or array-like): Coordinates of the target point
 
     Return:
-        nearest_point (numpy.array): the nearest point on the line
+        numpy.array: the nearest point on the line
 
-    See also: `project_point_on_line`
+    See Also:
+        `project_point_on_line <#geometric.project_point_on_line>`_
     '''
     assert len(point) == len(vector) == len(target_point)
     norm = np.power(np.linalg.norm(vector), 2)
@@ -494,12 +570,12 @@ def nearest_distance(point, vector, target_point):
     direction of the vector and the other point.
 
     Arguments:
-        point (list or array-like): coordinates of the point through which the line passes
-        vector (list or array-like): direction vector of the line
-        target_point (list or array-like): coordinates of the target point
+        point (list or array-like): Coordinates of the point through which the line passes
+        vector (list or array-like): Direction vector of the line
+        target_point (list or array-like): Coordinates of the target point
 
     Return:
-        dist (float): the shortest distance between the line and the target point
+        float: The shortest distance between the line and the target point
     '''
     n_point = nearest_point(point, vector, target_point)
     return distance_between_points(n_point, target_point)
@@ -509,16 +585,19 @@ def angle_between_vectors(v1, v2, degrees=False):
     '''Calculate the angle between two vectors in radians or degrees.
 
     Arguments:
-        v1 (list or array-like): first vector
-        v2 (list or array-like): second vector
-        degrees (bool, optional): if True, return the angle in degrees. Default is False (radians).
+        v1 (list or array-like): First vector
+        v2 (list or array-like): Second vector
+        degrees (bool, optional): If True, return the angle in degrees. Default is False (radians).
 
     Returns:
-        angle (float): angle between v1 and v2
+        float: Angle between v1 and v2
 
     Raises:
-        AssertionError: if the dimensions of v1 and v2 are not equal,
+        AssertionError: If the dimensions of v1 and v2 are not equal,
                         or if both vectors are zero vectors.
+
+    Note:
+        Return value will be in range [0, :math:`\\pi`]
     '''
     assert len(v1) == len(v2), 'Vectors must have the same dimension'
     assert not (is_zero_vector(v1) and is_zero_vector(v2)), 'Vectors must not both be zero vectors'
@@ -533,14 +612,14 @@ def orthogonal_vector(v):
     '''Return a unit vector (randomly, for n >= 3) that is orthogonal to the input vector.
 
     Arguments:
-        v (list or array-like): input vector
+        v (list or array-like): Input vector
 
     Returns:
-        ov (numpy.ndarray): unit vector that is orthogonal to the input vector
+        numpy.ndarray: Unit vector that is orthogonal to the input vector
 
     Raises:
-        AssertionError: if input vector is 1D
-        AssertionError: if input is zero vector
+        AssertionError: If input vector is 1D
+        AssertionError: If input is zero vector
     '''
     assert len(v) > 1, 'Input vector should at least with 2D'
     assert norm(v) > 0, 'Input should not be zero vector'
@@ -557,14 +636,14 @@ def vector_projection(v1, v2):
     '''Project a vector, v1, onto another vector, v2.
 
     Arguments:
-        v1 (list or array-like): vector to be projected
-        v2 (list or array-like): vector onto which v1 is projected
+        v1 (list or array-like): Vector to be projected
+        v2 (list or array-like): Vector onto which v1 is projected
 
     Return:
-        v_project (numpy.array): projection of v1 onto v2
+        numpy.array: Projection of v1 onto v2
 
     Raises:
-        AssertionError: if the dimensions of v1 and v2 are not equal,
+        AssertionError: If the dimensions of v1 and v2 are not equal,
                         or if v2 is a zero vector.
     '''
     assert len(v1) == len(v2), 'Vectors must have the same dimension'
@@ -578,14 +657,14 @@ def project_vector_on_plane(v, normal):
     '''Project a vector, v, onto a plane represented by its normal vector.
 
     Arguments:
-        v (list or array-like): vector to be projected.
-        normal (list or array-like): normal vector of the plane
+        v (list or array-like): Vector to be projected.
+        normal (list or array-like): Normal vector of the plane
 
     Return:
-        v_project (numpy.array): projection of v onto the plane
+        numpy.array: Projection of v onto the plane
 
     Raises:
-        AssertionError: if the dimensions of v and normal are not equal, or if they are not in 3D space
+        AssertionError: If the dimensions of v and normal are not equal, or if they are not in 3D space
     '''
     assert len(v) == len(normal) == 3, 'Vectors must be in 3D space'
     v_parallel = vector_projection(v, normal)
@@ -615,11 +694,11 @@ def is_line_on_plane(line, plane):
     '''Check if a line lies on a given plane in 3D space.
 
     Arguments:
-        line (list or array-like): representation of the line as [[x1, y1, z1], [vx, vy, vz]]
-                                   where [x1, y1, z1] is a point on the line and
-                                   [vx, vy, vz] is the direction vector of the line
+        line (list or array-like): representation of the line as ``[[x1, y1, z1], [vx, vy, vz]]``
+                                   where ``[x1, y1, z1]`` is a point on the line and
+                                   ``[vx, vy, vz]`` is the direction vector of the line
         plane (array-like): representation of the plane as [a, b, c, d]
-                            where the plane equation is ax + by + cz + d = 0
+                            where the plane equation is :math:`ax + by + cz + d = 0`
 
     Returns:
         on_plane (bool): True if the line lies on the plane, False otherwise
@@ -638,19 +717,21 @@ def project_point_on_line(p, line):
     '''Project a point onto a line in 2D or 3D space based on inputs.
 
     Arguments:
-        p (list or array-like): the point to be projected
-        line (list or array-like): representation of the line:
-            - 2D: the coefficients of the line equation, ax + by + c = 0
-            - 3D: [[x1, y1, z1], [vx, vy, vz]] where [x1, y1, z1] is a point on the line
-                  and [vx, vy, vz] is the direction vector of the line
+        p (list or array-like): The point to be projected
+        line (list or array-like): Representation of the line:
+
+            (1) 2D: the coefficients of the line equation, :math:`ax + by + c = 0`
+            (2) 3D: ``[[x1, y1, z1], [vx, vy, vz]]`` where ``[x1, y1, z1]`` is a point on the line
+                  and ``[vx, vy, vz]`` is the direction vector of the line
 
     Returns:
-        point (numpy.array): the projected point on the line.
+        numpy.array: The projected point on the line.
 
     Raises:
         AssertionError: If the dimensions of `p` and `line` do not match the expected dimensions.
 
-    See also: `nearest_point`
+    See Also:
+        `nearest_point <#geometric.nearest_point>`_
     '''
     def two_dim():
         assert len(line) == 3
@@ -678,15 +759,15 @@ def project_point_on_plane(p, plane):
     '''Project a point onto a given plane in 3D space.
 
     Arguments:
-        p (list or array-like): coordinates of the point to be projected
-        plane (list or array-like): representation of the plane as [a, b, c, d]
-                                    where the plane equation is ax + by + cz + d = 0
+        p (list or array-like): Coordinates of the point to be projected
+        plane (list or array-like): Representation of the plane as [a, b, c, d]
+                                    where the plane equation is :math:`ax + by + cz + d = 0`
 
     Returns:
-        project_point (numpy.array): coordinates of the projected point on the plane.
+        numpy.array: Coordinates of the projected point on the plane.
 
     Raises:
-        AssertionError: if the dimensions of the point and plane do not match the expected dimensions.
+        AssertionError: If the dimensions of the point and plane do not match the expected dimensions.
     '''
     assert len(p) == 3 and len(plane) == 4
     x, y, z = p
@@ -703,15 +784,14 @@ def project_line_on_plane(line, plane):
     '''Project a line onto a given plane in 3D space.
 
     Arguments:
-        line (list or array-like): representation of the line as [[x1, y1, z1], [vx, vy, vz]]
-                                   where [x1, y1, z1] is a point on the line and
-                                   [vx, vy, vz] is the direction vector of the line
-        plane (list or array-like): representation of the plane as [a, b, c, d]
-                                    where the plane equation is ax + by + cz + d = 0
+        line (list or array-like): Representation of the line as ``[[x1, y1, z1], [vx, vy, vz]]``
+                                   where ``[x1, y1, z1]`` is a point on the line and
+                                   ``[vx, vy, vz]`` is the direction vector of the line
+        plane (list or array-like): Representation of the plane as [a, b, c, d]
+                                    where the plane equation is :math:`ax + by + cz + d = 0`
 
     Returns:
-        project_line (list): a list containing the projected point on the plane and
-                             the projected direction vector on the plane.
+        list: a list containing the projected point on the plane and the projected direction vector on the plane.
 
     Raises:
         AssertionError: if the dimensions of the line and plane do not match the expected dimensions.
@@ -727,14 +807,17 @@ def distance_point_to_line(p, line):
     '''Calculate the distance from a point to a line in 2D space.
 
     Arguments:
-        p (list or array-like): coordinates of the point
-        line (list or array-like): coefficients of the line equation ax + by + c = 0
+        p (list or array-like): Coordinates of the point
+        line (list or array-like): Coefficients of the line equation ax + by + c = 0
 
     Returns:
-        distance (float): the distance from the point to the line.
+        float: The distance from the point to the line.
 
     Raises:
         AssertionError: If the dimensions of the point and line do not match the expected dimensions.
+
+    .. todo::
+        Should also supports 3D.
     '''
     p_project = project_point_on_line(p, line)
     return np.linalg.norm(p_project - np.array(p))
@@ -744,15 +827,15 @@ def distance_point_to_plane(p, plane):
     '''Calculate the distance from a point to a plane in 3D space.
 
     Arguments:
-        p (list or array-like): coordinates of the point [x, y, z].
-        plane (list or array-like): representation of the plane as [a, b, c, d]
-                                    where the plane equation is ax + by + cz + d = 0
+        p (list or array-like): Coordinates of the point ``[x, y, z]``.
+        plane (list or array-like): Representation of the plane as ``[a, b, c, d]``
+                                    where the plane equation is :math:`ax + by + cz + d = 0`
 
     Returns:
-        distance (float): the distance from the point to the plane.
+        float: The distance from the point to the plane.
 
     Raises:
-        AssertionError: if the dimensions of the point and plane do not match the expected dimensions
+        AssertionError: If the dimensions of the point and plane do not match the expected dimensions
     '''
     p_project = project_point_on_plane(p, plane)
     return np.linalg.norm(p_project - np.array(p))
@@ -762,17 +845,18 @@ def intersection_between_lines(line_1, line_2):
     '''Find the intersection point between two lines.
 
     Arguments:
-        line_1 (list or array-like): the first line, representation of the line:
-            - 2D: the coefficients of the line equation, ax + by + c = 0
-            - 3D: [[x1, y1, z1], [vx, vy, vz]] where [x1, y1, z1] is a point on the line
-                  and [vx, vy, vz] is the direction vector of the line
+        line_1 (list or array-like): the first line. Representation of the line:
+
+            (1) 2D: The coefficients of the line equation :math:`ax + by + c = 0`
+            (2) 3D: ``[[x1, y1, z1], [vx, vy, vz]]`` where ``[x1, y1, z1]`` is a point on the line
+                  and ``[vx, vy, vz]`` is the direction vector of the line
         line_2 (list or array-like): the second line, the representation is the same as `line_1`
 
     Returns:
-        point (numpy.ndarray): the intersection point
+        numpy.ndarray: The intersection point
 
     Raises:
-        AssertionError: if the lines are parallel (in 2D) or do not intersect (in 3D).
+        AssertionError: If the lines are parallel (in 2D) or do not intersect (in 3D).
     '''
     def two_dim():
         assert len(line_1) == len(line_2) == 3
@@ -818,15 +902,15 @@ def intersection_between_lines(line_1, line_2):
 def intersection_between_line_segments(line_1_points, line_2_points):
     '''Find the intersection point between two line segments, which are determined by their end-points.
     If this two line segments intersect, returns the intersection point; otherwise, an array filled with
-    NaN (not a number) is returned.
+    ``NaN`` (not a number) is returned.
 
     Arguments:
-        line_1_points (list or array-like): two points defining the first line segment
-        line_2_points (list or array-like): two points defining the second line segment
+        line_1_points (list or array-like): Two points defining the first line segment
+        line_2_points (list or array-like): Two points defining the second line segment
 
     Returns:
-        point (numpy.ndarray): the intersection point if the line segments intersect within their bounds;
-                               otherwise, an array of NaNs.
+        numpy.ndarray: The intersection point if the line segments intersect within their bounds.
+                       Otherwise, an array of NaNs.
 
     Raises:
         AssertionError: If the input points are not in the correct shape.
@@ -851,15 +935,14 @@ def line_from_planes(plane_1, plane_2):
     '''Calculate the intersection line of two planes.
 
     Arguments:
-        plane_1 (list or array-like): representation of the first plane as [a, b, c, d]
-                                      where the plane equation is ax + by + cz + d = 0
-        plane_2 (list or array-like): representation of the second plane as [a, b, c, d]
-                                      where the plane equation is ax + by + cz + d = 0
+        plane_1 (list or array-like): Representation of the first plane as ``[a, b, c, d]``
+                                      where the plane equation is :math:`ax + by + cz + d = 0`
+        plane_2 (list or array-like): Same as `plane_1`
 
     Returns:
-        line (list): a list containing two elements:
-                    - a point [x, y, z] on the line of intersection
-                    - a direction vector [i, j, k] of the line of intersection
+        list: a list containing two elements:
+              - A point ``[x, y, z]`` on the line of intersection
+              - A direction vector ``[i, j, k]`` of the line of intersection
 
     Raises:
         AssertionError: if the input planes do not define a unique line (i.e., if they are parallel or coincide).
@@ -896,7 +979,26 @@ def line_from_planes(plane_1, plane_2):
     assert False
 
 
-def line_from_noise_data(points):
+def line_from_noisy_data(points):
+    '''Estimate the best-fit line from noisy points in 2D or 3D space.
+
+    - In **2D**, the line is fitted using least squares to minimize vertical error from the model :math:`y = ax + b`.
+      The result is returned in the form of normalized coefficients [a, b, c] for the line equation
+      :math:`ax + by + c = 0` where :math:`\\sqrt{a^2+b^2}=1`.
+    - In **3D**, the line is estimated by performing PCA (Principal Component Analysis) on the points to find
+      the main direction of variance.
+
+    Arguments:
+        points (array-like): A list or array of shape ``(N, 2)`` or ``(N, 3)``, containing at least two points.
+
+    Returns:
+        list:
+            - In 2D: Normalized line coefficients ``[a, b, c]``.
+            - In 3D: A list [point, direction_vector], where both elements are lists of 3 floats.
+
+    Raises:
+        AssertionError: If the input does not have 2D or 3D shape.
+    '''
     def two_dim():
         A = np.ones((points.shape[0], 2))
         b = np.ones((points.shape[0], 1))
@@ -930,19 +1032,19 @@ def point_from_plane_and_line(plane, line):
     '''Calculate the intersection point of a plane and a line in 3D space.
 
     Arguments:
-        plane (list or array-like): representation of the plane as [a, b, c, d]
-                                    where the plane equation is ax + by + cz + d = 0
-        line (list or array-like): representation of the line as [[x1, y1, z1], [vx, vy, vz]]
-                                   where [x1, y1, z1] is a point on the line and
-                                   [vx, vy, vz] is the direction vector of the line
+        plane (list or array-like): Representation of the plane as ``[a, b, c, d]``
+                                    where the plane equation is :math:`ax + by + cz + d = 0`
+        line (list or array-like): Representation of the line as ``[[x1, y1, z1], [vx, vy, vz]]``
+                                   where ``[x1, y1, z1]`` is a point on the line and
+                                   ``[vx, vy, vz]`` is the direction vector of the line
 
     Returns:
-        result (numpy.ndarray): coordinates of the intersection point [x, y, z] if it exists,
-                                otherwise a message indicating that the line lies on the plane
-                                or is parallel to the plane and an array with 3 nan is returned
+        numpy.ndarray: Coordinates of the intersection point ``[x, y, z]`` if it exists,
+                       otherwise a warning message indicating that the line lies on the plane
+                       or is parallel to the plane and an array with 3 ``NaN`` is returned
 
     Raises:
-        AssertionError: if the dimensions of the plane and line do not match the expected dimensions
+        AssertionError: If the dimensions of the plane and line do not match the expected dimensions
     '''
     assert len(plane) == 4 and np.array(line).shape == (2, 3)
     den = np.dot(plane[:3], line[1])
@@ -960,18 +1062,19 @@ def point_from_three_planes(plane_1, plane_2, plane_3):
     '''Calculate the intersection point of three planes in 3D space.
 
     Arguments:
-        plane_1 (list or array-like): representation of the plane as [a, b, c, d]
-                                      where the plane equation is ax + by + cz + d = 0
+        plane_1 (list or array-like): Representation of the plane as ``[a, b, c, d]``
+                                      where the plane equation is :math:`ax + by + cz + d = 0`
         plane_2 (list or array-like): same as `plane_1`
         plane_3 (list or array-like): same as `plane_1`
 
     Returns:
-        point (numpy.ndarry): coordinates of the intersection point [x, y, z]
-
-    Note: an array with 3 nan is returned if these planes are not intersect at one point
+        numpy.ndarry: Coordinates of the intersection point ``[x, y, z]``
 
     Raises:
-        AssertionError: if the dimensions of the planes do not match the expected dimensions.
+        AssertionError: If the dimensions of the planes do not match the expected dimensions.
+
+    Note:
+        An array with 3 ``NaN`` is returned if these planes are not intersect at one point
     '''
     assert len(plane_1) == len(plane_2) == len(plane_3) == 4
     try:
@@ -986,21 +1089,23 @@ def circle_from_three_points(p1, p2, p3):
     '''Calculate the circle passing through three points in 2D or 3D space.
 
     Arguments:
-        p1 (list or array-like): coordinates of the first point
-        p2 (list or array-like): coordinates of the second point
-        p3 (list or array-like): coordinates of the third point
+        p1 (list or array-like): Coordinates of the first point
+        p2 (list or array-like): Coordinates of the second point
+        p3 (list or array-like): Coordinates of the third point
 
     Returns:
-        tuple:
-          - center (numpy.ndarray): coordinates of the circle's center
-          - radius (float): radius of the circle
-          - plane (numpy.ndarray): plane coefficient [a, b, c, d] which the circle lies in
-                                   For 2D, this term is neglectable and XY plane (Z=0) is returned
+        tuple: A tuple containing:
+
+          - numpy.ndarray: Coordinates of the circle's center
+          - float: Radius of the circle
+          - numpy.ndarray:
+            Plane coefficient ``[a, b, c, d]`` which the circle lies in.
+            For 2D, this term is neglectable and XY plane (:math:`Z=0`) is returned
 
     Raises:
-        AssertionError: if the points do not lie in the same dimension
-        AssertionError: if the dimension of the point is not 2 nor 3
-        AssertionError: if three points are collinear
+        AssertionError: If the points do not lie in the same dimension
+        AssertionError: If the dimension of the point is not 2 nor 3
+        AssertionError: If three points are collinear
     '''
     def two_dim():
         line_1 = perpendicular_bisector(p1, p2)
@@ -1028,22 +1133,25 @@ def circle_from_center_and_points(center, p1, p2=None):
     '''Calculate the circle given its center and two points on its circumference.
 
     Arguments:
-        center (list or array-like): coordinates of the circle's center
-        p1 (list or array-like): coordinates of the first point on the circumference
-        p2 (list or array-like): coordinates of the second point on the circumference
-                                 neglectable for 2D case
+        center (list or array-like): Coordinates of the circle's center
+        p1 (list or array-like): Coordinates of the first point on the circumference
+        p2 (list or array-like): Coordinates of the second point on the circumference.
+                                 Neglectable for 2D case
 
     Returns:
         tuple:
-          - center (numpy.ndarray): coordinates of the circle's center
-          - radius (float): radius of the circle
-          - plane (list): plane coefficient [a, b, c, d] which the circle lies on.
-                          For 2D, this term is neglectable and XY plane is returned
+            A tuple containing
+
+          - numpy.ndarray: Coordinates of the circle's center
+          - float: Radius of the circle
+          - list:
+            Plane coefficient ``[a, b, c, d]`` which the circle lies on.
+            For 2D, this term is neglectable and XY plane (:math:`Z=0`) is returned
 
     Raises:
-        AssertionError: if the points do not lie in the same dimension
-        AssertionError: if the dimension of the point is not 2 nor 3
-        AssertionError: if the distances from the center to p1 and p2 are not equal within a tolerance.
+        AssertionError: If the points do not lie in the same dimension
+        AssertionError: If the dimension of the point is not 2 nor 3
+        AssertionError: If the distances from the center to p1 and p2 are not equal within a tolerance.
     '''
     def two_dim():
         return center, distance_between_points(center, p1), XY_PLANE
@@ -1061,23 +1169,27 @@ def circle_from_center_and_points(center, p1, p2=None):
     assert False
 
 
-def circle_from_noised_data(data):
+def circle_from_noisy_data(data):
     '''Calculate the circle given by noised data.
 
     Arguments:
-        data (list or array-like): sampled noised data, should with shape either (N, 2) or (N, 3).
+        data (list or array-like): sampled noised data, should with shape either ``(N, 2)`` or ``(N, 3)``.
                                    N should greater than or equal to 4.
 
     Returns:
         tuple:
           - center (numpy.ndarray): coordinates of the circle's center
           - radius (float): radius of the circle
-          - plane (list): plane coefficient [a, b, c, d] which the circle lies on.
-                          For 2D, this term is neglectable and XY plane is returned
+          - plane (list):
+            plane coefficient ``[a, b, c, d]`` which the circle lies on.
+            For 2D, this term is neglectable and XY plane is returned
 
     Raise:
         AssertionError: if N less then 4
         AssertionError: if the dimension of the point is not 2 nor 3
+
+    .. todo::
+        3D is not supported yet!
     '''
     def two_dim():
         A = np.ones((len(data), 3))
@@ -1105,22 +1217,22 @@ def circle_from_noised_data(data):
 
 
 def circle_coordinate_transform(center, plane, x_direction_point=None):
-    '''Calculate the transformation matrix from a new coordinate system to the original one. The circle is centered
-    at origin and lies in XY plane (Z=0).
+    '''Calculate the transformation matrix from a new coordinate system to the original one. The transformed circle is
+    centered at origin and lies in XY plane (:math:`Z=0`).
 
     Arguments:
-        center (list or array-like): coordinates of the circle's center
-        plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies in
-        x_direction_point (list or array-like or None): point in the plane to determine the x-axis direction.
+        center (list or array-like): Coordinates of the circle's center
+        plane (list or array-like): Plane coefficient ``[a, b, c, d]`` which the circle lies in
+        x_direction_point (list or array-like or None): Point in the plane to determine the x-axis direction.
                                                         If not provided, a random point on the plane is chosen.
 
     Returns:
-        T (numpy.ndarray): transformation matrix T of shape (4, 4) that transforms coordinates into the
-                           original coordinate system
+        numpy.ndarray:
+            Transformation matrix T of shape (4, 4) that transforms coordinates into the original coordinate system
 
     Raises:
-        AssertionError: if the dimensions of center or plane are incorrect
-        AssertionError: if `x_direction_point` is provided but its dimensions are not 3.
+        AssertionError: If the dimensions of center or plane are incorrect
+        AssertionError: If `x_direction_point` is provided but its dimensions are not 3.
     '''
     assert len(center) == 3 and len(plane) == 4
     if x_direction_point:
@@ -1140,25 +1252,29 @@ def arc_from_center_and_endpoints(center, p1, p2):
     '''Compute the parameters of an arc defined by its center and endpoints.
 
     Arguments:
-        center (list or array-like): center coordinates of the arc
-        p1 (list or array-like): first endpoint coordinates of the arc
-        p2 (list or array-like): second endpoint coordinates of the arc
+        center (list or array-like): Center coordinates of the arc
+        p1 (list or array-like): First endpoint coordinates of the arc
+        p2 (list or array-like): Second endpoint coordinates of the arc
 
     Returns:
         tuple:
-          - center (numpy.ndarray): center of the arc
-          - radius (float): radius of the arc
-          - thetas (list): angle range of the arc
-            - 2D: angle is relative to X-axis
-            - 3D: angle is relative to the direction of `center` to `p1`
-          - T (numpy.ndarray): transformation matrix to convert arc coordinates.
-            - 2D: the matrix is with shape 3x3
-            - 3D: the matrix is with shape 4x4
+            A tuple containing:
+
+            - numpy.ndarray: Center of the arc
+            - float: Radius of the arc
+            - list: angle range of the arc
+
+                - 2D: angle is relative to X-axis
+                - 3D: angle is relative to the direction of `center` to `p1`
+            - numpy.ndarray: transformation matrix to convert arc coordinates.
+
+                - 2D: the matrix is with shape 3x3
+                - 3D: the matrix is with shape 4x4
 
     Raises:
-        AssertionError: if the dimensions of center, p1, or p2 are not consistent
-        AssertionError: if the dimension of the point is not 2 nor 3
-        AssertionError: if the distances from the center to p1 and p2 are not equal within a tolerance.
+        AssertionError: If the dimensions of center, p1, or p2 are not consistent
+        AssertionError: If the dimension of the point is not 2 nor 3
+        AssertionError: If the distances from the center to p1 and p2 are not equal within a tolerance.
     '''
     def two_dim():
         center_, radius, _ = circle_from_center_and_points(center, p1, p2)
@@ -1189,6 +1305,31 @@ def arc_from_center_and_endpoints(center, p1, p2):
 
 
 def arc_from_three_points(p1, p2, p3):
+    '''Construct an arc passing through three points in 2D or 3D space.
+
+    Arguments:
+        p1 (list or array-like): First point on the arc.
+        p2 (list or array-like): Second point on the arc.
+        p3 (list or array-like): Third point on the arc.
+
+    Returns:
+        tuple:
+            A tuple containing:
+
+            - numpy.ndarray: Center of the arc
+            - float: Radius of the arc
+            - list: angle range of the arc
+
+                - 2D: angle is relative to X-axis
+                - 3D: angle is relative to the direction of `center` to `p1`
+            - numpy.ndarray: transformation matrix to convert arc coordinates.
+
+                - 2D: the matrix is with shape 3x3
+                - 3D: the matrix is with shape 4x4
+
+    Raises:
+        AssertionError: If input point dimensions are invalid or inconsistent.
+    '''
     def two_dim():
         line_1 = perpendicular_bisector(p1, p2)
         line_2 = perpendicular_bisector(p1, p3)
@@ -1213,18 +1354,18 @@ def generate_points_on_circle(center, radius, plane, num=50):
     '''Generate `num` points on a circle given its center and radius.
 
     Arguments:
-        center (list or array-like): coordinates of the circle's center
-        radius (float): radius of the circle
-        plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies on.
+        center (list or array-like): Coordinates of the circle's center
+        radius (float): Radius of the circle
+        plane (list or array-like): Plane coefficient ``[a, b, c, d]`` which the circle lies on.
                                     For 2D, this term is neglectable.
-        num (int, optional): number of points to generate on the circle, default is 50
+        num (int, optional): Number of points to generate on the circle, default is 50
 
     Returns:
-        points (numpy.ndarray): array of points lying on the circle.
+        numpy.ndarray: Array of points lying on the circle
 
     Raises:
-        AssertionError: if the dimensions of center, radius, or plane are incorrect.
-        AssertionError: if got negative radius
+        AssertionError: If the dimensions of center, radius, or plane are incorrect.
+        AssertionError: If got negative radius
     '''
     def two_dim():
         points = []
@@ -1257,23 +1398,25 @@ def generate_points_on_arc(center, radius, theta_range, transform, num=50):
     '''Generate `num` points on an arc given its center, radius, range of theta and the transform.
 
     Arguments:
-          center (numpy.ndarray): center of the arc
-          radius (float): radius of the arc
-          thetas (list): angle range of the arc
+        center (numpy.ndarray): Center of the arc
+        radius (float): Radius of the arc
+        thetas (list): Angle range of the arc
+
             - 2D: angle is relative to X-axis
             - 3D: angle is relative to X-axis in new coordinate
-          - T (numpy.ndarray): transformation matrix to convert arc coordinates into original coordinate
+        T (numpy.ndarray): Transformation matrix to convert arc coordinates into original coordinate
+
             - 2D: the matrix is with shape 3x3
             - 3D: the matrix is with shape 4x4
-        num (int, optional): number of points to generate on the circle, default is 50
+        num (int, optional): Number of points to generate on the circle, default is 50
 
     Returns:
-        points (numpy.ndarray): array of points lying on the arc
+        numpy.ndarray: Array of points lying on the arc
 
     Raises:
-        AssertionError: if the dimensions of center is incorrect
-        AssertionError: if got negative radius
-        AssertionError: if the dimension of center is mismatched withe the transform
+        AssertionError: If the dimensions of center is incorrect
+        AssertionError: If got negative radius
+        AssertionError: If the dimension of center is mismatched withe the transform
     '''
     assert len(center) in [2, 3] and len(theta_range) == 2
     assert radius > 0
@@ -1292,22 +1435,23 @@ def generate_points_on_arc(center, radius, theta_range, transform, num=50):
 def intersection_between_line_and_circle(line, circle):
     '''Find intersection points between a line and a circle in 2D or 3D space.
 
-    Args:
+    Arguments:
         line (list or tuple): Line parameters depending on dimensionality:
-            - For 2D: [a, b, c] representing the line equation ax + by + c = 0.
-            - For 3D: [[x0, y0, z0], [vx, vy, vz]] representing a point and direction vector respectively.
+
+            - For 2D: ``[a, b, c]`` Representing the line equation :math:`ax + by + c = 0`.
+            - For 3D: ``[[x0, y0, z0], [vx, vy, vz]]`` representing a point and direction vector respectively.
         circle (tuple):
-            - center (list or array-like): coordinates of the circle's center
-            - radius (float): radius of the circle
-            - plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies on.
+            - center (list or array-like): Coordinates of the circle's center
+            - radius (float): Radius of the circle
+            - plane (list or array-like): Plane coefficient ``[a, b, c, d]`` which the circle lies on.
                                           For 2D, this term is neglectable.
 
     Returns:
-        points (list): list of intersection points
+        list: List of intersection point(s)
 
     Raises:
-        AssertionError: if the dimensions of center, radius, or plane are incorrect.
-        AssertionError: if got negative radius
+        AssertionError: If the dimensions of center, radius, or plane are incorrect.
+        AssertionError: If got negative radius
     '''
     def two_dim():
         assert len(line) == 3
@@ -1359,21 +1503,23 @@ def intersection_between_line_and_circle(line, circle):
 def point_circle_relation(point, circle):
     '''Get relation between a point and a circle.
 
-    Args:
-        point (list or array-like): point coordinates to check.
+    Arguments:
+        point (list or array-like): Point coordinates to check.
         circle (tuple):
-            - center (list or array-like): coordinates of the circle's center
-            - radius (float): radius of the circle
-            - plane (list or array-like): plane coefficient [a, b, c, d] which the circle lies on.
-                                          For 2D, this term is neglectable.
+            - center (list or array-like): Coordinates of the circle's center
+            - radius (float): Radius of the circle
+            - plane (list or array-like):
+                Plane coefficient ``[a, b, c, d]`` which the circle lies on.
+                For 2D, this term is neglectable.
 
     Returns:
-        on_circle (bool): True if the point lies on the circle, False otherwise
-        relation (enum.Enum): enumeration as following
-                              0: if the point is inside the circle
-                              1: if the point is on the border of the circle
-                              2: if the point is outside the circle
-                              3: if the point is not on the plane of the circle (3D only)
+        bool: True if the point lies on the circle, False otherwise
+        PointCircleEnum: Enumeration as following:
+
+        - 0: If the point is inside the circle
+        - 1: If the point is on the border of the circle
+        - 2: If the point is outside the circle
+        - 3: If the point is not on the plane of the circle (3D only)
 
     Raises:
         AssertionError: if the dimensions of center, radius, or plane (only in 3D) are incorrect.
@@ -1412,24 +1558,30 @@ def is_point_on_arc(point, arc):
     '''Determines if a point lies on a given arc.
 
     Arguments:
-        point (list or array-like): coordinates of the point to check
-        arc (tuple): contains center, radius, theta_range, and transform.
-            - center (numpy.ndarray): center of the arc
-            - radius (float): radius of the arc
-            - thetas (list): angle range of the arc
+        point (list or array-like): Coordinates of the point to check
+        arc (tuple): A tuple contains center, radius, theta_range, and transform.
+
+            - center (numpy.ndarray): Center of the arc
+            - radius (float): Radius of the arc
+            - thetas (list): Angle range of the arc
+
                 - 2D: angle is relative to X-axis
                 - 3D: angle is relative to the direction of `center` to `p1`
-            - T (numpy.ndarray): transformation matrix to convert arc coordinates.
+            - T (numpy.ndarray): Transformation matrix to convert arc coordinates.
+
                 - 2D: the matrix is with shape 3x3
                 - 3D: the matrix is with shape 4x4
 
     Returns:
-        result (bool): True if the point is on the arc, False otherwise
+        bool: True if the point is on the arc, False otherwise
 
     Raises:
-        AssertionError: if the dimensions of the inputs are not consistent.
-        AssertionError: if the length of arc is incorrect
-        AssertionError: if the radius is negative
+        AssertionError: If the dimensions of the inputs are not consistent.
+        AssertionError: If the length of arc is incorrect
+        AssertionError: If the radius is negative
+
+    .. todo::
+        3D is not supported yet!
     '''
     def two_dim():
         theta = angle_between_vectors([1, 0], np.array(point) - np.array(center))
@@ -1462,20 +1614,21 @@ def point_triangle_relation(p, p1, p2, p3):
     '''Determine the relation between `p` and the triangle formed by `p1`, `p2` and `p3`.
 
     Arguments:
-        p (list or array-like): coordinates of the point to check
-        p1 (list or array-like): coordinates of the first vertex of the triangle
-        p2 (list or array-like): coordinates of the second vertex of the triangle
-        p3 (list or array-like): coordinates of the third vertex of the triangle
+        p (list or array-like): Coordinates of the point to check
+        p1 (list or array-like): Coordinates of the first vertex of the triangle
+        p2 (list or array-like): Coordinates of the second vertex of the triangle
+        p3 (list or array-like): Coordinates of the third vertex of the triangle
 
     Return:
-        result (enum.Enum): enumeration as following
-                            0: if point is inside the triangle
-                            1: if point in on the border of the triangle
-                            2: if point is outside the triangle
-                            3: if point is not in the plane formed by three vertices (3D only)
+        PointTriangleEnum: Enumeration as following
+
+        - 0: If point is inside the triangle
+        - 1: If point in on the border of the triangle
+        - 2: If point is outside the triangle
+        - 3: If point is not in the plane formed by three vertices (3D only)
 
     Raise:
-        AssertionError: if the dimensions of the points are not consistent.
+        AssertionError: If the dimensions of the points are not consistent.
     '''
     assert len(p) == len(p1) == len(p2) == len(p3), 'Dimension of points are not consistent'
     if len(p) == 3 and not is_line_on_plane(p, plane_from_three_points(p1, p2, p3)):
@@ -1494,9 +1647,31 @@ def point_triangle_relation(p, p1, p2, p3):
 
 
 def point_cylinder_relation(p, cylinder):
+    '''Determine the spatial relationship between a point and a cylinder.
+
+    Arguments:
+        p (list or array-like): Coordinates of the 3D point to be tested.
+        cylinder (tuple): A tuple (bottom_center, radius, height, direction), where:
+
+            - bottom_center (list or array-like): The 3D coordinates of the cylinder's base center.
+            - radius (float): Radius of the cylinder (must be positive).
+            - height (float): Height of the cylinder (must be positive).
+            - direction (list or array-like): A 3D vector indicating the axis direction.
+
+    Returns:
+        PointShapeEnum: Enumeratiion as following:
+
+        - 0: If point is inside the cylinder
+        - 1: If point is on the border of the cylinder
+        - 2: If point is out of the cylinder
+
+    Raises:
+        AssertionError: If the cylinder parameters are invalid or improperly formatted.
+    '''
     assert len(cylinder) == 4, 'Invalid cylinder'
     assert len(cylinder[0]) == len(cylinder[3]) == 3, 'First and fourth data should be with length 3'
-    assert cylinder[2] > 0, 'Radius should be positive'
+    assert cylinder[1] > 0, 'Radius should be positive'
+    assert cylinder[2] > 0, 'Height should be positive'
     bottom_center, radius, height, direction = cylinder
     direction = unit_vector(direction)
     ov = orthogonal_vector(direction)
@@ -1526,6 +1701,21 @@ def point_cylinder_relation(p, cylinder):
 
 
 def spherical_cap_volume(radius, height):
+    '''Calculate the volume of a spherical cap.
+
+    A spherical cap is the portion of a sphere cut off by a plane. The formula used is:
+    :math:`V = \\frac{\\pi h^2 (3R - h)}{3}`
+
+    Arguments:
+        radius (float): Radius of the sphere (must be positive).
+        height (float): Height of the cap (must be in [0, 2 * radius)).
+
+    Returns:
+        float: Volume of the spherical cap.
+
+    Raises:
+        AssertionError: If the radius is not positive, height is negative, or exceeds the sphere's diameter.
+    '''
     assert radius > 0, "Radius should be non-negative"
     assert height >= 0, "Height should be greater than or equal to 0"
     assert height < 2 * radius, "Height should not greater than two times of radius"
@@ -1533,6 +1723,24 @@ def spherical_cap_volume(radius, height):
 
 
 def overlap_volume_between_spheres(sphere1, sphere2):
+    '''Compute the volume of intersection (overlap) between two spheres.
+
+    The overlap volume is calculated using the analytical formula for intersecting spheres
+    based on the distance between centers and their respective radii.
+
+    Arguments:
+        sphere1 (tuple): A tuple (center, radius), where:
+
+            - center (list or array-like): Coordinates of the first sphere center.
+            - radius (float): Radius of the first sphere (must be positive).
+        sphere2 (tuple): Same format as `sphere1`, representing the second sphere.
+
+    Returns:
+        float: Volume of the overlapping region. Returns 0 if spheres do not intersect.
+
+    Raises:
+        AssertionError: If sphere definitions are invalid or contain non-positive radii.
+    '''
     assert len(sphere1) == 2 and len(sphere2) == 2, "Invalid sphere input"
     assert len(sphere1[0]) == 3 and len(sphere2[0]) == 3, "Invalid sphere input"
     assert sphere1[1] > 0 and sphere2[1] > 0, "Invalid sphere input"
@@ -1544,6 +1752,20 @@ def overlap_volume_between_spheres(sphere1, sphere2):
 
 
 def random_point_on_sphere(sphere):
+    '''Generate a random point uniformly distributed on the surface of a sphere.
+
+    Arguments:
+        sphere (tuple): A tuple (center, radius), where:
+
+            - center (list or array-like): Coordinates of the sphere's center (3D).
+            - radius (float): Radius of the sphere (must be positive).
+
+    Returns:
+        numpy.ndarray: A 3D coordinate of the random point on the sphere surface.
+
+    Raises:
+        AssertionError: If the input is not a valid sphere definition.
+    '''
     assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3
     center, radius = sphere
     theta = np.random.random() * 2 * np.pi  # azimuth
@@ -1553,6 +1775,24 @@ def random_point_on_sphere(sphere):
 
 
 def point_sphere_relation(point, sphere):
+    '''Determine the spatial relationship between a point and a sphere.
+
+    Arguments:
+        point (list or array-like): 3D coordinates of the point to be tested.
+        sphere (tuple): A tuple (center, radius), where:
+
+            - center (list or array-like): 3D coordinates of the sphere's center.
+            - radius (float): Radius of the sphere (must be positive).
+
+    Returns:
+        PointShapeEnum: Enumeration as following
+
+            - 0: If point is inside the cylinder
+            - 1: If point is on the border of the cylinder
+            - 2: If point is out of the cylinder
+    Raises:
+        AssertionError: If the input point or sphere is invalid or improperly formatted.
+    '''
     assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3 and len(point) == 3
     center, radius = sphere
     dist = distance_between_points(point, center)
@@ -1564,6 +1804,22 @@ def point_sphere_relation(point, sphere):
 
 
 def cartesian_to_spherical(point):
+    '''
+    Convert a 3D point from Cartesian coordinates to spherical coordinates.
+
+    Arguments:
+        point (list or array-like): A 3D point ``[x, y, z]``.
+
+    Returns:
+        numpy.ndarray: A 3-element array ``[radius, theta, phi]`` where
+
+        - radius: Distance from the origin to the point (must be non-zero).
+        - theta (azimuth): Angle in the XY plane from the X-axis, in radians :math:`[0, 2\\pi)`.
+        - phi (zenith): Angle from the positive Z-axis, in radians :math:`[0, \\pi]`.
+
+    Raises:
+        AssertionError: If the input point is not 3D or the radius is zero.
+    '''
     assert len(point) == 3
     x, y, z = point
     radius = norm(point)
@@ -1581,6 +1837,17 @@ def cartesian_to_spherical(point):
 
 
 def spherical_to_cartesian(point):
+    '''Convert a 3D point from spherical coordinates to Cartesian coordinates.
+
+    Arguments:
+        point (list or array-like): A 3-element list or array ``[radius, theta, phi]``.
+
+    Returns:
+        numpy.ndarray: A 3D point ``[x, y, z]`` in Cartesian coordinates.
+
+    Raises:
+        AssertionError: If the input is not valid spherical coordinates.
+    '''
     assert len(point) == 3
     radius, azimuth, zenith = point
     assert radius >= 0 and 0 <= azimuth < 2 * np.pi and 0 <= zenith <= np.pi
@@ -1592,6 +1859,28 @@ def spherical_to_cartesian(point):
 
 
 def distance_between_points_on_sphere(p1, p2, sphere):
+    '''Calculate the shortest distance (i.e., geodesic) between two points on the surface of a sphere.
+
+    The function assumes that both points lie exactly on the surface of the sphere.
+    The distance is computed as the product of the sphere's radius and the angle (in radians)
+    between the vectors from the sphere center to each point.
+
+    Arguments:
+        p1 (list or array-like): Coordinates of the first point on the sphere surface.
+        p2 (list or array-like): Coordinates of the second point on the sphere surface.
+        sphere (tuple): A tuple (center, radius), where:
+
+            - center (list or array-like): Coordinates of the sphere's center.
+            - radius (float): Radius of the sphere (must be positive).
+
+    Returns:
+        float: The great-circle distance between the two points along the sphere's surface.
+
+    Raises:
+        AssertionError: If inputs are not valid 3D points
+        AssertionError: If radius is non-positive
+        AssertionError: If points are not on the sphere surface
+    '''
     assert len(p1) == len(p2) == 3
     assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3
     assert point_sphere_relation(p1, sphere) == PointShapeEnum.ON_BORDER
