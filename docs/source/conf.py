@@ -25,6 +25,18 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'sphinx.ext.mathjax',
+    'myst_parser',
+]
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
 ]
 
 todo_include_todos = True
