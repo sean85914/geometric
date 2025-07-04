@@ -807,11 +807,11 @@ def distance_point_to_line(p, line):
     '''Calculate the distance from a point to a line in 2D space.
 
     Arguments:
-        p (list or array-like): Coordinates of the point
+        p (list or array-like): A single point ``[x, y]`` or multiple points ``[[x1, y1], [x2, y2], ...]``.
         line (list or array-like): Coefficients of the line equation ax + by + c = 0
 
     Returns:
-        float: The distance from the point to the line.
+        float or np.ndarray: Distance (if input is a single point) or an array of distances (if multiple points).
 
     Raises:
         AssertionError: If the dimensions of the point and line do not match the expected dimensions.
@@ -819,26 +819,42 @@ def distance_point_to_line(p, line):
     .. todo::
         Should also supports 3D.
     '''
-    p_project = project_point_on_line(p, line)
-    return np.linalg.norm(p_project - np.array(p))
+    p_ = np.atleast_2d(p)
+    if p_.shape[0] == 1:
+        p_project = project_point_on_line(p, line)
+        return np.linalg.norm(p_project - np.array(p))
+    else:
+        ext_p = np.ones((p_.shape[0], 3))
+        ext_p[:, :2] = p_
+        num = ext_p @ np.array(line)
+        den = norm(line[:2]) ** 2
+        return np.abs(num) / den
 
 
 def distance_point_to_plane(p, plane):
     '''Calculate the distance from a point to a plane in 3D space.
 
     Arguments:
-        p (list or array-like): Coordinates of the point ``[x, y, z]``.
+        p (list or array-like): A single point ``[x, y, z]`` or multiple points ``[[x1, y1, z1], [x2, y2, z2], ...]``.
         plane (list or array-like): Representation of the plane as ``[a, b, c, d]``
                                     where the plane equation is :math:`ax + by + cz + d = 0`
 
     Returns:
-        float: The distance from the point to the plane.
+        float or np.ndarray: Distance (if input is a single point) or an array of distances (if multiple points).
 
     Raises:
         AssertionError: If the dimensions of the point and plane do not match the expected dimensions
     '''
-    p_project = project_point_on_plane(p, plane)
-    return np.linalg.norm(p_project - np.array(p))
+    p_ = np.atleast_2d(p)
+    if p_.shape[0] == 1:
+        p_project = project_point_on_plane(p, plane)
+        return np.linalg.norm(p_project - np.array(p))
+    else:
+        ext_p = np.ones((p_.shape[0], 4))
+        ext_p[:, :3] = p_
+        num = ext_p @ np.array(plane)
+        den = norm(plane[:3]) ** 2
+        return np.abs(num) / den
 
 
 def intersection_between_lines(line_1, line_2):
