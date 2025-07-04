@@ -653,6 +653,29 @@ def vector_projection(v1, v2):
     return dot / norm_square * np.array(v2)
 
 
+def vector_rotation(v, theta):
+    '''Rotate vector in 2D counter-clockwise.
+
+    Arguments:
+        v (list or array-like): Vector in 2D.
+        theta (float): Angle to rotate, with unit radian
+
+    Return:
+        numpy.array: Rotated vector
+
+    Raises:
+        AssertionError: If input vector is not in 2D
+    '''
+    assert len(v) == 2, 'Vector should in 2D'
+    c = np.cos(theta)
+    s = np.sin(theta)
+    rot_mat = np.array([
+        [c, -s],
+        [s, c]
+    ])
+    return rot_mat @ np.array(v)
+
+
 def project_vector_on_plane(v, normal):
     '''Project a vector, v, onto a plane represented by its normal vector.
 

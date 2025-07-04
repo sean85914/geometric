@@ -11,6 +11,7 @@ Vectors and Points
 .. autofunction:: geometric.distance_between_points
 .. autofunction:: geometric.angle_between_vectors
 .. autofunction:: geometric.orthogonal_vector
+.. autofunction:: geometric.vector_rotation
 
 Lines
 ~~~~~
