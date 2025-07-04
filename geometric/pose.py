@@ -176,6 +176,27 @@ class Pose:
         assert isinstance(rhs, Pose)
         return Pose.from_matrix(self._T @ rhs._T)
 
+    @staticmethod
+    def chain_(*poses):
+        '''Chains multiple Pose instances via left-to-right multiplication.
+
+        Arguments:
+            *poses (Pose): Any number of Pose instances.
+
+        Returns:
+            Pose: The resulting Pose from multiplying all inputs.
+
+        Raises:
+            AssertionError: If any input is not a Pose.
+        '''
+        assert all(isinstance(p, Pose) for p in poses), "All inputs must be Pose instances"
+        if not poses:
+            return Pose.identity()
+        T = np.eye(4)
+        for p in poses:
+            T = T @ p.matrix
+        return Pose.from_matrix(T)
+
     @classmethod
     def from_matrix(cls, matrix):
         """Creates a Pose instance from a 4x4 transformation matrix.
