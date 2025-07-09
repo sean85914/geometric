@@ -40,5 +40,5 @@ __all__ = ['norm', 'is_zero_vector', 'unit_vector', 'is_on_axis', 'middle_point'
            'point_sphere_relation', 'cartesian_to_spherical', 'spherical_to_cartesian',
            'distance_between_points_on_sphere', 'Pose', 'vector_rotation']
 
-__version__ = '0.0.0'
+__version__ = '0.0.1'
 __author__ = 'SEAN.LU'

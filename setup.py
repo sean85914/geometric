@@ -1,9 +1,14 @@
+import re
 from setuptools import setup
 
 
+with open('geometric/__init__.py') as f:
+    contents = f.read()
+    version = re.search(r'__version__ = [\'"]([0-9.]+)[\'"]', contents).group(1)
+
 setup(
     name="geometric",
-    version="0.0.0",
+    version=version,
     author="SEAN.LU",
     author_email="sean19960914@gmail.com",
     description="Module for geometric calculation",
