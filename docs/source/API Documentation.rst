@@ -60,6 +60,7 @@ Circle
 ~~~~~~
 .. autofunction:: geometric.circle_from_three_points
 .. autofunction:: geometric.circle_from_center_and_points
+.. autofunction:: geometric.circle_from_center_and_radius
 .. autofunction:: geometric.generate_points_on_circle
 .. autofunction:: geometric.circle_coordinate_transform
 

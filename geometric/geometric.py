@@ -365,7 +365,7 @@ def random_point_on_plane(plane):
     '''Generate a random point on a plane in 3D space.
 
     Arguments:
-        plane (list or array-like): the coefficients of the plane equation in the form :math:`ax + by + cz + d = 0`
+        plane (list or array-like): The coefficients of the plane equation in the form :math:`ax + by + cz + d = 0`
 
     Returns:
         numpy.ndarray: Coordinates of a random point on the plane
@@ -380,7 +380,7 @@ def random_point_on_plane(plane):
     r1 = np.random.uniform(-1., 1.)
     r2 = np.random.uniform(-1., 1.)
     p = [0.0] * 3
-    zero_index = np.where(plane[:3] == 0)[0]
+    zero_index = np.where(np.isclose(plane[:3], 0.0, atol=1e-5))[0]
     if len(zero_index) == 0:
         p[0] = r1
         p[1] = r2
@@ -389,6 +389,8 @@ def random_point_on_plane(plane):
         index = zero_index[0]
         index_1 = (index + 1) % 3
         index_2 = (index + 2) % 3
+        if np.isclose(plane[index_2], 0.0, atol=1e-5):  # make sure plane[index_2] is not zero
+            index_1, index_2 = index_2, index_2
         p[index] = r1
         p[index_1] = r2
         p[index_2] = -(plane[3] + plane[index_1] * r2) / plane[index_2]
@@ -1188,6 +1190,7 @@ def circle_from_center_and_points(center, p1, p2=None):
             For 2D, this term is neglectable and XY plane (:math:`Z=0`) is returned
 
     Raises:
+        AssertionError: If the vector from `center` to `p1` is colinear with the vector from `center` to `p2`
         AssertionError: If the points do not lie in the same dimension
         AssertionError: If the dimension of the point is not 2 nor 3
         AssertionError: If the distances from the center to p1 and p2 are not equal within a tolerance.
@@ -1204,6 +1207,47 @@ def circle_from_center_and_points(center, p1, p2=None):
     elif len(center) == 3:
         assert len(center) == len(p1) == len(p2)
         assert np.isclose(distance_between_points(center, p1), distance_between_points(center, p2), atol=1e-5)
+        return three_dim()
+    assert False
+
+
+def circle_from_center_and_radius(center, radius, plane_normal=XY_PLANE[:3]):
+    '''Construct a 2D or 3D circle representation from a center and radius.
+
+    Arguments:
+        center (list or array-like): The circle center as a 2D (length-2) or 3D (length-3) point.
+        radius (float): The radius of the circle. Must be positive.
+        plane_normal (list or array-like, optional): A 3D normal vector defining the plane
+            in which the circle lies. Required only for 3D cases. Defaults to ``[0.0, 0.0, 1.0]``.
+
+    Returns:
+        tuple:
+            A tuple containing
+
+          - numpy.ndarray: Coordinates of the circle's center
+          - float: Radius of the circle
+          - list:
+            Plane coefficient ``[a, b, c, d]`` which the circle lies on.
+            For 2D, this term is neglectable and XY plane (:math:`Z=0`) is returned
+
+    Raises:
+        AssertionError: If `radius` is non-positive.
+        AssertionError: If `center` length is neither 2 nor 3
+        AssertionError: If `plane_normal` is invalid in 3D case.
+    '''
+    def two_dim():
+        return center, radius, XY_PLANE
+
+    def three_dim():
+        const = - np.dot(np.array(center), np.array(plane_normal))
+        plane = np.hstack((plane_normal, const))
+        return center, radius, plane
+
+    assert radius > 0, 'Radius should be positive'
+    if len(center) == 2:
+        return two_dim()
+    elif len(center) == 3:
+        assert len(plane_normal) == 3 and not is_zero_vector(plane_normal), 'Invalid plane'
         return three_dim()
     assert False
 

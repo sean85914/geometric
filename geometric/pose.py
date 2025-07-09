@@ -11,7 +11,7 @@ class Pose:
     Attributes:
         matrix (nump.ndarray): The 4x4 transformation matrix.
         translation (nump.ndarray): The 3D translation vector.
-        rotation (nump.ndarray): The rotation represented as a rotation vector.
+        rotation (numpy.ndarray): The rotation represented as a rotation vector.
         inv (Pose): The inverse of the pose.
     """
 
@@ -28,9 +28,9 @@ class Pose:
         assert len(trans) == len(rot) == 3
         self._T = np.eye(4)
         self._T[:3, :3] = R.from_rotvec(rot).as_matrix()
-        self._T[:3, 3] = trans
-        self._translation = trans
-        self._rotation = rot
+        self._T[:3, 3] = np.array(trans)
+        self._translation = np.array(trans)
+        self._rotation = np.array(rot)
 
     def __repr__(self):
         """Returns the string representation of the transformation matrix.
@@ -177,7 +177,7 @@ class Pose:
         return Pose.from_matrix(self._T @ rhs._T)
 
     @staticmethod
-    def chain_(*poses):
+    def chain(*poses):
         '''Chains multiple Pose instances via left-to-right multiplication.
 
         Arguments:
@@ -301,13 +301,40 @@ class Pose:
 
         Arguments:
             target_pose (Pose): The target pose.
-            num (int): Number of interpolation steps.
+            num (int): Number of interpolation steps, **including** the start and end poses. Must greater than 2.
 
         Returns:
             list of Pose: A list of interpolated Pose instances.
 
         Raises:
-            AssertionError: If `target_pose` is not a Pose or num < 3.
+            AssertionError: If `target_pose` is not a Pose.
+            AssertionError: If `num` less than 3.
+
+        The translation is interpolated linearly, while the rotation is interpolated using spherical
+        linear interpolation (SLERP).
+
+        .. code-block:: python
+
+            >>> from geometric import Pose
+            >>> import numpy as np
+            >>> p1 = Pose.identity()
+            >>> p2 = Pose([10, 0, 0], [1/np.sqrt(3) * np.radians(120)] * 3)
+            >>> ps = p1.interpolate(p2, 11)
+            >>> print([p.translation[0] for p in ps])
+            [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+
+        Visualization with `Open3d <https://www.open3d.org/docs/release/>`_
+
+        .. code-block:: python
+
+            >>> import open3d as o3d
+            >>> geoms = [o3d.geometry.TriangleMesh.create_coordinate_frame(0.5).transform(p.matrix) for p in ps]
+            >>> o3d.visualization.draw_geometries(geoms)
+
+        Result
+
+        .. figure:: _static/interpolate.png
+            :align: center
         """
         '''  0    ...      num - 1
            this          target_pose
