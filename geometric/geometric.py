@@ -390,7 +390,7 @@ def random_point_on_plane(plane):
         index_1 = (index + 1) % 3
         index_2 = (index + 2) % 3
         if np.isclose(plane[index_2], 0.0, atol=1e-5):  # make sure plane[index_2] is not zero
-            index_1, index_2 = index_2, index_2
+            index_1, index_2 = index_2, index_1
         p[index] = r1
         p[index_1] = r2
         p[index_2] = -(plane[3] + plane[index_1] * r2) / plane[index_2]
