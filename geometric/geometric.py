@@ -1834,27 +1834,34 @@ def overlap_volume_between_spheres(sphere1, sphere2):
     return np.pi * (r1 + r2 - d)**2 * (d**2 + 2 * d * (r1 + r2) - 3 * (r1 - r2)**2) / (12 * d)
 
 
-def random_point_on_sphere(sphere):
-    '''Generate a random point uniformly distributed on the surface of a sphere.
+def random_point_on_sphere(sphere, num_points=1):
+    '''Generate uniformly distributed random points on the surface of a sphere.
 
     Arguments:
         sphere (tuple): A tuple (center, radius), where:
 
             - center (list or array-like): Coordinates of the sphere's center (3D).
             - radius (float): Radius of the sphere (must be positive).
+        num_points (int, optional): Number of points to sample. Defaults to 1
 
     Returns:
-        numpy.ndarray: A 3D coordinate of the random point on the sphere surface.
+        numpy.ndarray: A (3,) array representing a single 3D point if `num_points` is 1,
+        or a ``(num_points, 3)`` array of sampled points if `num_points` greater than 1.
 
     Raises:
-        AssertionError: If the input is not a valid sphere definition.
+        AssertionError: If the sphere definition is invalid or `num_points` is not positive.
     '''
     assert len(sphere) == 2 and sphere[1] > 0 and len(sphere[0]) == 3
+    assert num_points >= 1, 'num_points must be positive'
     center, radius = sphere
-    theta = np.random.random() * 2 * np.pi  # azimuth
-    u = np.random.random()
+    theta = np.random.random(num_points) * 2 * np.pi  # azimuth
+    u = np.random.random(num_points)
     phi = np.arccos(1 - 2 * u)  # zenith
-    return np.array(center) + spherical_to_cartesian((radius, theta, phi))
+    sphere_coordinates = np.zeros((num_points, 3))
+    sphere_coordinates[:, 0] = radius
+    sphere_coordinates[:, 1] = theta
+    sphere_coordinates[:, 2] = phi
+    return np.array(center) + spherical_to_cartesian(sphere_coordinates)
 
 
 def point_sphere_relation(point, sphere):
@@ -1920,25 +1927,49 @@ def cartesian_to_spherical(point):
 
 
 def spherical_to_cartesian(point):
-    '''Convert a 3D point from spherical coordinates to Cartesian coordinates.
+    '''Convert one or more 3D points from spherical to Cartesian coordinates.
 
-    Arguments:
-        point (list or array-like): A 3-element list or array ``[radius, theta, phi]``.
+    This function accepts a single point or an array of points in spherical coordinates
+    and returns their corresponding Cartesian coordinates.
+
+    Args:
+        point (list, array-like, or numpy.ndarray): A single point ``[radius, theta, phi]``
+            or an (N, 3) array of N points in spherical coordinates. `theta` is the azimuthal
+            angle in radians from the x-axis in the xy-plane, and `phi` is the polar angle
+            from the z-axis.
 
     Returns:
-        numpy.ndarray: A 3D point ``[x, y, z]`` in Cartesian coordinates.
+        numpy.ndarray: A 1D array ``[x, y, z]`` for a single point or a (N, 3) array for
+        N points in Cartesian coordinates.
 
     Raises:
-        AssertionError: If the input is not valid spherical coordinates.
+        AssertionError: If input does not conform to expected shape or spherical coordinate constraints.
     '''
-    assert len(point) == 3
-    radius, azimuth, zenith = point
-    assert radius >= 0 and 0 <= azimuth < 2 * np.pi and 0 <= zenith <= np.pi
-    return np.array([
-        radius * np.cos(azimuth) * np.sin(zenith),
-        radius * np.sin(azimuth) * np.sin(zenith),
-        radius * np.cos(zenith)
-    ])
+    points = np.atleast_2d(point)
+    if points.shape[0] == 1:
+        assert len(point) == 3
+        radius, azimuth, zenith = point
+        assert radius >= 0 and 0 <= azimuth < 2 * np.pi and 0 <= zenith <= np.pi
+        return np.array([
+            radius * np.cos(azimuth) * np.sin(zenith),
+            radius * np.sin(azimuth) * np.sin(zenith),
+            radius * np.cos(zenith)
+        ])
+    else:
+        assert points.shape[1] == 3
+        radii = points[:, 0]
+        azimuth = points[:, 1]
+        zenith = points[:, 2]
+        mat_1 = np.row_stack([radii] * 3)
+        mat_2 = np.zeros_like(mat_1)
+        cos_a = np.cos(azimuth)
+        sin_a = np.sin(azimuth)
+        cos_z = np.cos(zenith)
+        sin_z = np.sin(zenith)
+        mat_2[0, :] = cos_a * sin_z
+        mat_2[1, :] = sin_a * sin_z
+        mat_2[2, :] = cos_z
+        return (mat_1 * mat_2).T
 
 
 def distance_between_points_on_sphere(p1, p2, sphere):
