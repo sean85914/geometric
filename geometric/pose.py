@@ -484,7 +484,7 @@ class Pose:
         '''
         assert len(point) == 3
         points = np.array(point).reshape(1, 3)
-        return self.transform_points(points)
+        return self.transform_points(points)[0]
 
     def transform_points(self, points):
         '''Apply the pose transformation to a list or array of 3D points.
@@ -501,3 +501,45 @@ class Pose:
         points = np.array(points)
         assert points.shape[1] == 3
         return (self.matrix[:3, :3] @ points.T).T + self.matrix[:3, 3]
+
+    def rotate_point(self, point):
+        '''Rotate a single 3D point around the pose's translation.
+
+        This applies the rotation component of the pose to the point,
+        treating `self.translation` as the rotation center.
+
+        Args:
+            point (array-like): A 3-element 3D point.
+
+        Returns:
+            numpy.ndarray: The rotated 3D point.
+
+        Raises:
+            AssertionError: If the input does not have length 3.
+        '''
+        assert len(point) == 3
+        points = np.array(point).reshape(1, 3)
+        return self.rotate_points(points)[0]
+
+
+    def rotate_points(self, points):
+        '''Rotate multiple 3D points around the pose's translation.
+
+        This function rotates each point around `self.translation` using
+        the pose's rotation matrix, without applying any translation.
+
+        Args:
+            points (array-like): A (N, 3) array of 3D points.
+
+        Returns:
+            numpy.ndarray: A (N, 3) array of rotated 3D points.
+
+        Raises:
+            AssertionError: If input does not have shape (N, 3).
+        '''
+        points = np.array(points)
+        assert points.shape[1] == 3
+        p_trans = Pose.identity().set_translation(self.translation)
+        p_rot = Pose.identity().set_rotation_from_matrix(self.rotation)
+        p = p_trans @ p_rot @ p_trans.inv
+        return p.transform_points(points)
