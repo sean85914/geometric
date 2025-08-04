@@ -74,12 +74,16 @@ class Pose:
         Arguments:
             trans (array-like): A 3-element translation vector.
 
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
+
         Raises:
             AssertionError: If input vector is not of length 3.
         """
         assert len(trans) == 3
         self._translation = trans
         self._T[:3, 3] = trans
+        return self
 
     @property
     def rotation(self):
@@ -91,6 +95,9 @@ class Pose:
         Arguments:
             rot (array-like): A 3x3 rotation matrix.
 
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
+
         Raises:
             AssertionError: If input is not a valid 3x3 matrix.
         """
@@ -98,12 +105,16 @@ class Pose:
         r = R.from_matrix(rot)
         self._rotation = r.as_rotvec()
         self._T[:3, :3] = r.as_matrix()
+        return self
 
     def set_rotation_from_rotvec(self, rv):
         """Sets the rotation from a rotation vector.
 
         Args:
             rv (array-like): A 3-element rotation vector.
+
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
 
         Raises:
             AssertionError: If input vector is not of length 3.
@@ -112,12 +123,16 @@ class Pose:
         r = R.from_rotvec(rv)
         self._rotation = rv
         self._T[:3, :3] = r.as_matrix()
+        return self
 
     def set_rotation_from_quaternion(self, quat):
         """Sets the rotation from a quaternion.
 
         Arguments:
             quat (array-like): A 4-element quaternion ``[x, y, z, w]``.
+
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
 
         Raises:
             AssertionError: If input quaternion is not of length 4.
@@ -126,6 +141,7 @@ class Pose:
         r = R.from_quat(quat)
         self._rotation = r.as_rotvec()
         self._T[:3, :3] = r.as_matrix()
+        return self
 
     def set_rotation_from_axis_angle(self, axis, angle):
         """
@@ -135,6 +151,9 @@ class Pose:
             axis (array-like): A 3-element rotation axis.
             angle (float): The rotation angle in radians.
 
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
+
         Raises:
             AssertionError: If axis is not of length 3 or angle is not a float.
         """
@@ -143,6 +162,7 @@ class Pose:
         unit_axis = axis / np.linalg.norm(axis)
         rv = unit_axis * angle
         self.set_rotation_from_rotvec(rv)
+        return self
 
     def set_rotation_from_euler(self, angles, sequence):
         """Sets the rotation from Euler angles.
@@ -150,6 +170,9 @@ class Pose:
         Args:
             angles (array-like): A 3-element list of Euler angles.
             sequence (str): A valid 3-character rotation sequence (e.g., ``xyz``).
+
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
 
         Raises:
             AssertionError: If input is invalid.
@@ -163,6 +186,7 @@ class Pose:
         r = R.from_euler(sequence, angles)
         self._rotation = r.as_rotvec()
         self._T[:3, :3] = r.as_matrix()
+        return self
 
     def __matmul__(self, rhs):
         """Applies transformation composition using matrix multiplication.
@@ -358,6 +382,9 @@ class Pose:
             vector (list or array-like): The target 3D direction vector to align with.
             target_axis (int, optional): The index of the original axis to align (0: X, 1: Y, 2: Z). Defaults to 2.
 
+        Returns:
+            Pose: The modified pose object (`self`), allowing for method chaining.
+
         Raises:
             AssertionError: If the axis index is not between 0 and 2 (inclusive).
         '''
@@ -377,6 +404,7 @@ class Pose:
             axis = unit_vector(axis)
             angle = angle_between_vectors(vector, origin)
         self.set_rotation_from_axis_angle(axis, angle)
+        return self
 
     def distance(self, ref_point=np.zeros(3)):
         '''Compute the Euclidean distance from this pose's translation to a given reference point.
