@@ -320,6 +320,25 @@ class Pose:
         assert isinstance(rhs, Pose)
         return Pose.from_matrix((self.inv @ rhs).matrix)
 
+    def diffs(self, rhs):
+        """Computes the difference transformations between `self` and a list of poses.
+
+        Arguments:
+            rhs (list of Pose): A non-empty list of target poses.
+
+        Returns:
+            list of Pose: A list of relative transformation poses such that for each
+                          element `p` in `rhs`, we have: ``self * diff = p``
+
+        Note:
+            For a single pose, use :meth:`diff`.
+        """
+        assert isinstance(rhs, list) and len(rhs) > 0
+        assert all([isinstance(elem, Pose) for elem in rhs])
+        res = np.array([elem.matrix for elem in rhs])
+        res = np.stack([self.inv.matrix] * len(rhs), axis=0) @ res
+        return [Pose.from_matrix(matrix) for matrix in res]
+
     def interpolate(self, target_pose, num):
         """Interpolates between self and a target pose.
 
@@ -520,7 +539,6 @@ class Pose:
         assert len(point) == 3
         points = np.array(point).reshape(1, 3)
         return self.rotate_points(points)[0]
-
 
     def rotate_points(self, points):
         '''Rotate multiple 3D points around the pose's translation.
