@@ -486,6 +486,8 @@ class Pose:
         '''
         rv = self.get_rotvec()
         angle = norm(rv)
+        if np.isclose(angle, 0, atol=1e-5):
+            return np.array([1.0, 0.0, 0.0]), 0.0
         axis = unit_vector(rv)
         return axis, angle
 
