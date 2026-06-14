@@ -16,7 +16,7 @@ from .geometric import (norm, is_zero_vector, unit_vector, is_on_axis, middle_po
                         point_circle_relation, is_point_on_arc, point_triangle_relation, point_cylinder_relation,
                         spherical_cap_volume, overlap_volume_between_spheres, random_point_on_sphere,
                         point_sphere_relation, cartesian_to_spherical, spherical_to_cartesian,
-                        distance_between_points_on_sphere, vector_rotation)
+                        distance_between_points_on_sphere, vector_rotation, parabolic_length, inv_parabolic_length)
 from .pose import Pose
 
 
@@ -38,7 +38,8 @@ __all__ = ['norm', 'is_zero_vector', 'unit_vector', 'is_on_axis', 'middle_point'
            'point_circle_relation', 'is_point_on_arc', 'point_triangle_relation', 'point_cylinder_relation',
            'spherical_cap_volume', 'overlap_volume_between_spheres', 'random_point_on_sphere',
            'point_sphere_relation', 'cartesian_to_spherical', 'spherical_to_cartesian',
-           'distance_between_points_on_sphere', 'Pose', 'vector_rotation']
+           'distance_between_points_on_sphere', 'Pose', 'vector_rotation',
+           'parabolic_length', 'inv_parabolic_length']
 
 __version__ = '0.0.1'
 __author__ = 'SEAN.LU'

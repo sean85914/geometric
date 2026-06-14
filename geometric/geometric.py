@@ -2004,3 +2004,87 @@ def distance_between_points_on_sphere(p1, p2, sphere):
     v2 = np.array(p2) - np.array(center)
     angle = angle_between_vectors(v1, v2)
     return radius * angle
+
+
+def _parabolic_fun(x):
+    sqrt = np.sqrt(1 + x**2)
+    return x * sqrt + np.log(np.abs(x + sqrt))
+
+
+def parabolic_length(coeff, x1, x2):
+    '''Calculate the arc length of a parabola between two x-coordinates.
+
+    The parabola is defined as :math:`y = ax^2 + bx + c`.
+
+    Arguments:
+        coeff (list or array-like): Coefficients ``[a, b, c]`` of the parabola
+                                    :math:`y = ax^2 + bx + c`.
+        x1 (float): First x-coordinate.
+        x2 (float): Second x-coordinate. If ``x1 > x2``, they are swapped internally.
+
+    Returns:
+        float: The arc length between ``x1`` and ``x2``.
+
+    Raises:
+        AssertionError: If ``coeff`` does not have exactly 3 elements.
+        AssertionError: If ``coeff[0]`` is zero (degenerate line case).
+    '''
+    assert len(coeff) == 3, 'coeff must have 3 elements [a, b, c]'
+    assert not np.isclose(coeff[0], 0.0, atol=1e-5), 'Leading coefficient must be non zero'
+    a, b = coeff[:2]
+    if x1 > x2:
+        x1, x2 = x2, x1
+    u1 = 2 * a * x1 + b
+    u2 = 2 * a * x2 + b
+    return 1 / (4 * a) * (_parabolic_fun(u2) - _parabolic_fun(u1))
+
+
+def inv_parabolic_length(coeff, x1, length, max_iter=100, tol=1e-10):
+    '''Find the endpoint x2 such that the arc length from x1 to x2 equals a given length.
+
+    Solves the inverse arc length problem for a parabola :math:`y = ax^2 + bx + c`
+    using Newton's method in the substituted variable :math:`u = 2ax + b`.
+    The result always satisfies :math:`x2 > x1`.
+
+    Arguments:
+        coeff (list or array-like): Coefficients ``[a, b, c]`` of the parabola
+                                    :math:`y = ax^2 + bx + c`.
+        x1 (float): Starting x-coordinate.
+        length (float): Desired arc length (must be positive).
+        max_iter (int, optional): Maximum number of Newton iterations. Default is 100.
+        tol (float, optional): Convergence tolerance on the residual. Default is ``1e-10``.
+
+    Returns:
+        float: The endpoint ``x2 > x1`` such that the arc length from ``x1`` to ``x2``
+               equals ``length``.
+
+    Raises:
+        AssertionError: If ``coeff`` does not have exactly 3 elements.
+        AssertionError: If ``coeff[0]`` is zero (degenerate line case).
+        AssertionError: If ``length`` is not positive.
+
+    Warns:
+        UserWarning: If Newton's method does not converge within ``max_iter`` iterations.
+    '''
+    assert len(coeff) == 3, 'coeff must have 3 elements [a, b, c]'
+    assert not np.isclose(coeff[0], 0.0, atol=1e-5), 'Leading coefficient must be non zero'
+    assert length > 0, 'Length must be positive'
+    a, b = coeff[:2]
+    u1 = 2 * a * x1 + b
+    k = 4 * a * length
+
+    def G(u):
+        return _parabolic_fun(u) - _parabolic_fun(u1) - k
+
+    # Newton's method
+    u2 = u1 + k  # initial guess
+    iternum = 0
+    delta = G(u2)
+    while iternum < max_iter and np.abs(delta) > tol:
+        u2 -= delta / (2 * np.sqrt(1 + u2**2))
+        iternum += 1
+        delta = G(u2)
+    if np.abs(delta) > tol:
+        warnings.warn(f'Newton did not converge after {max_iter} iterations, residual={delta:.2e}')
+    x2 = (u2 - b) / (2 * a)
+    return x2
