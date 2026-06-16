@@ -852,7 +852,7 @@ def distance_point_to_line(p, line):
         ext_p = np.ones((p_.shape[0], 3))
         ext_p[:, :2] = p_
         num = ext_p @ np.array(line)
-        den = norm(line[:2]) ** 2
+        den = norm(line[:2])
         return np.abs(num) / den
 
 
@@ -878,7 +878,7 @@ def distance_point_to_plane(p, plane):
         ext_p = np.ones((p_.shape[0], 4))
         ext_p[:, :3] = p_
         num = ext_p @ np.array(plane)
-        den = norm(plane[:3]) ** 2
+        den = norm(plane[:3])
         return np.abs(num) / den
 
 

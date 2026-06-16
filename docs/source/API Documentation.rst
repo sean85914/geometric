@@ -64,6 +64,11 @@ Circle
 .. autofunction:: geometric.generate_points_on_circle
 .. autofunction:: geometric.circle_coordinate_transform
 
+Parabola
+~~~~~~~~~
+.. autofunction:: geometric.parabolic_length
+.. autofunction:: geometric.inv_parabolic_length
+
 Arc
 ~~~
 .. autofunction:: geometric.arc_from_center_and_endpoints
