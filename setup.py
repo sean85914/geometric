@@ -15,9 +15,6 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type='text/markdown',
     packages=["geometric"],
-    install_requires=[
-        "numpy>=1.26.2,<2.0.0",
-        "scipy>=1.11.4"
-    ],
-    python_requires='>=3.7'
+    install_requires=open('requirements.txt').read().splitlines(),
+    python_requires='>=3.9'
 )
