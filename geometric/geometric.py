@@ -1288,6 +1288,7 @@ def circle_from_noisy_data(data):
         return (xc, yc), radius, XY_PLANE
 
     def three_dim():
+        # TODO
         raise NotImplementedError()
 
     data = np.array(data)
@@ -1714,7 +1715,7 @@ def point_triangle_relation(p, p1, p2, p3):
         AssertionError: If the dimensions of the points are not consistent.
     '''
     assert len(p) == len(p1) == len(p2) == len(p3), 'Dimension of points are not consistent'
-    if len(p) == 3 and not is_line_on_plane(p, plane_from_three_points(p1, p2, p3)):
+    if len(p) == 3 and not is_point_on_plane(p, plane_from_three_points(p1, p2, p3)):
         return PointTriangleEnum.NOT_IN_PLANE
     v1 = np.array(p2) - np.array(p1)
     v2 = np.array(p3) - np.array(p1)
@@ -1947,8 +1948,8 @@ def spherical_to_cartesian(point):
     '''
     points = np.atleast_2d(point)
     if points.shape[0] == 1:
-        assert len(point) == 3
-        radius, azimuth, zenith = point
+        assert len(points[0]) == 3
+        radius, azimuth, zenith = points[0]
         assert radius >= 0 and 0 <= azimuth < 2 * np.pi and 0 <= zenith <= np.pi
         return np.array([
             radius * np.cos(azimuth) * np.sin(zenith),
@@ -1960,7 +1961,7 @@ def spherical_to_cartesian(point):
         radii = points[:, 0]
         azimuth = points[:, 1]
         zenith = points[:, 2]
-        mat_1 = np.row_stack([radii] * 3)
+        mat_1 = np.vstack([radii] * 3)
         mat_2 = np.zeros_like(mat_1)
         cos_a = np.cos(azimuth)
         sin_a = np.sin(azimuth)
