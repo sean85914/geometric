@@ -560,6 +560,6 @@ class Pose:
         points = np.array(points)
         assert points.shape[1] == 3
         p_trans = Pose.identity().set_translation(self.translation)
-        p_rot = Pose.identity().set_rotation_from_matrix(self.rotation)
+        p_rot = Pose.identity().set_rotation_from_rotvec(self.rotation)
         p = p_trans @ p_rot @ p_trans.inv
         return p.transform_points(points)
