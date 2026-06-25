@@ -31,6 +31,7 @@ from geometric.geometric import (
     cartesian_to_spherical, spherical_to_cartesian,
     distance_between_points_on_sphere,
     parabolic_length, inv_parabolic_length,
+    triangle_area, polygon_area,
 )
 from geometric.relation_enum import PointCircleEnum, PointShapeEnum, PointTriangleEnum
 
@@ -1000,3 +1001,83 @@ class TestInvParabolicLength:
     def test_nonpositive_length_raises(self):
         with pytest.raises(AssertionError):
             inv_parabolic_length([1, 0, 0], 0.0, 0.0)
+
+
+# ── Triangle & Polygon Area ───────────────────────────────────────────────────
+
+class TestTriangleArea:
+    def test_2d(self):
+        assert triangle_area([0, 0], [1, 0], [0, 1]) == 0.5
+
+    def test_3d_xy(self):
+        assert triangle_area([0, 0, 0], [1, 0, 0], [0, 1, 0]) == 0.5
+
+    def test_3d(self):
+        assert triangle_area([0, 0, 0], [3, 4, 0], [0, 0, 2]) == 5
+
+    def test_high_dim(self):
+        with pytest.raises(AssertionError):
+            triangle_area([1, 2, 3, 4], [4, 3, 2, 1], [0, 0, 0, 0])
+
+    def test_mismatched_dims_raises(self):
+        with pytest.raises(AssertionError):
+            triangle_area([0, 0], [1, 2, 3], [4, 5, 6])
+
+    def test_duplicated_points_2d(self):
+        with pytest.raises(AssertionError):
+            triangle_area([0, 0], [0, 0], [1, 2])
+
+    def test_duplicated_points_3d(self):
+        with pytest.raises(AssertionError):
+            triangle_area([0, 0, 0], [0, 0, 0], [1, 2, 0])
+
+    def test_colinear_2d(self):
+        with pytest.raises(AssertionError):
+            triangle_area([0, 0], [1, 2], [2, 4])
+
+    def test_colinear_3d(self):
+        with pytest.raises(AssertionError):
+            triangle_area([0, 0, 0], [1, 2, 3], [2, 4, 6])
+
+
+class TestPolygonArea:
+    points = [
+        [2, 0],
+        [3, 1],
+        [2, 2],
+        [1, 2],
+        [0, 1]
+    ]
+
+    def test_two_points(self):
+        with pytest.raises(AssertionError):
+            polygon_area([[1, 2], [3, 4]])
+
+    def test_high_dim(self):
+        with pytest.raises(AssertionError):
+            polygon_area([[1, 2, 3, 4], [4, 3, 2, 1], [0, 0, 0, 0]])
+
+    def test_downward_compatibility(self):
+        points = [[0, 0], [1, 0], [0, 1]]
+        assert polygon_area(points) == triangle_area(*points)
+
+    def test_non_coplanar(self):
+        with pytest.raises(AssertionError):
+            polygon_area([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    def test_2d(self):
+        assert polygon_area(self.points) == 3.5
+
+    def test_3d(self):
+        points_3d = np.hstack([self.points, np.zeros((5, 1))])
+        assert polygon_area(points_3d) == 3.5
+
+    def test_unit_square(self):
+        assert polygon_area([[0, 0], [1, 0], [1, 1], [0, 1]]) == 1
+
+    def test_composition(self):
+        assert polygon_area(self.points) == sum([
+            triangle_area(self.points[0], self.points[1], self.points[2]),
+            triangle_area(self.points[0], self.points[2], self.points[3]),
+            triangle_area(self.points[0], self.points[3], self.points[4]),
+        ])

@@ -2089,3 +2089,34 @@ def inv_parabolic_length(coeff, x1, length, max_iter=100, tol=1e-10):
         warnings.warn(f'Newton did not converge after {max_iter} iterations, residual={delta:.2e}')
     x2 = (u2 - b) / (2 * a)
     return x2
+
+
+def triangle_area(p1, p2, p3):
+    assert len(p1) == len(p2) == len(p3), 'Points with different dimension'
+    assert len(p1) in [2, 3], 'Points must be 2D or 3D'
+    p1, p2, p3 = np.vstack([p1, p2, p3])
+    v1 = p2 - p1
+    v2 = p3 - p1
+    assert not (is_zero_vector(v1) or is_zero_vector(v2) or is_zero_vector(p2 - p3)), 'Points are duplicated'
+    line = line_from_two_points(p1, p2)
+    assert not is_point_on_line(p3, line), 'Points are colinear'
+    if len(p1) == 2:  # prevent DeprecationWarning of 2D vectors cross product
+        v1 = np.append(v1, 0)
+        v2 = np.append(v2, 0)
+    return norm(np.cross(v1, v2)) / 2
+
+
+def polygon_area(points):
+    points = np.array(points)  # (N, 2 or 3)
+    assert points.shape[0] >= 3, 'At least 3 points required'
+    assert points.shape[1] in [2, 3], 'Points must be 2D or 3D'
+    if points.shape[1] == 3:
+        plane = plane_from_three_points(*points[:3])
+        assert all([is_point_on_plane(p, plane) for p in points[3:]]), 'Points must be coplanar'
+    p0 = points[0]
+    v1 = points[1:-1] - p0
+    v2 = points[2:] - p0
+    if points.shape[1] == 2:   # prevent DeprecationWarning of 2D vectors cross product
+        v1 = np.hstack([v1, np.zeros((len(v1), 1))])
+        v2 = np.hstack([v2, np.zeros((len(v2), 1))])
+    return norm(np.cross(v1, v2).sum(axis=0)) / 2

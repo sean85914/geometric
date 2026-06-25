@@ -1,6 +1,36 @@
 import pytest
 import numpy as np
-from geometric.pose import Pose
+from geometric.pose import Pose, _skew, _left_jacobian, _left_jacobian_inv
+
+
+# ── Skew ──────────────────────────────────────────────────────────────────────
+
+class TestSkew:
+    def test_antisymmetric(self):
+        W = _skew([1, 2, 3])
+        assert np.allclose(W + W.T, 0)
+
+    def test_values(self):
+        W = _skew([1, 2, 3])
+        expected = [
+            [0, -3, 2],
+            [3, 0, -1],
+            [-2, 1, 0]
+        ]
+        assert np.allclose(W, expected)
+
+
+# ── Left Jacobian and Inverse ─────────────────────────────────────────────────
+
+class TestLeftJacobian:
+    def test_inserse(self):
+        omega = [0.1, 0.2, 0.3]
+        assert np.allclose(_left_jacobian(omega) @ _left_jacobian_inv(omega), np.eye(3))
+
+    def test_near_zero(self):
+        omega = [1e-6, 0, 0]
+        assert np.allclose(_left_jacobian(omega), np.eye(3), atol=1e-4)
+        assert np.allclose(_left_jacobian_inv(omega), np.eye(3), atol=1e-4)
 
 
 # ── Construction ──────────────────────────────────────────────────────────────
@@ -193,3 +223,88 @@ class TestDistance:
     def test_from_ref(self):
         p = Pose([3, 4, 0], [0, 0, 0])
         assert np.isclose(p.distance([0, 4, 0]), 3.0)
+
+
+# ── From Twist and To Twist ───────────────────────────────────────────────────
+
+class TestFromToTwist:
+    def test_roundtrip(self):
+        # norm(omega) should less than pi
+        twist = [0.1, 0.2, 0.3, 1.0, 2.0, 3.0]
+        assert np.allclose(Pose.from_twist(twist).to_twist(), twist)
+
+    def test_zero_twist(self):
+        assert Pose.from_twist([0] * 6) == Pose.identity()
+
+    def test_pure_rotation(self):
+        p = Pose.from_twist([0, 0, np.pi / 2, 0, 0, 0])
+        assert np.allclose(p.translation, [0, 0, 0])
+
+    def test_pure_translation(self):
+        p = Pose.from_twist([0, 0, 0, 1, 2, 3])
+        assert np.allclose(p.translation, [1, 2, 3])
+        assert np.allclose(p.matrix[:3, :3], np.eye(3))
+
+    def test_invalid_length(self):
+        with pytest.raises(AssertionError):
+            Pose.from_twist([1, 2, 3])
+
+
+# ──  Geodesic ─────────────────────────────────────────────────────────────────
+
+class TestTwistToGeodesic:
+    def test_twist_to_self(self):
+        p = Pose.random_pose()
+        assert np.allclose(p.twist_to(p), 0)
+
+    def test_geodesic_distance_self(self):
+        p = Pose.random_pose()
+        assert np.isclose(p.geodesic_distance(p), 0)
+
+    def test_geodesic_distance_positive(self):
+        p1 = Pose.identity()
+        p2 = Pose([1, 0, 0], [0, 0, 0])
+        assert p1.geodesic_distance(p2) > 0
+
+    def test_twist_to_recovers_pose(self):
+        p1 = Pose.random_pose()
+        p2 = Pose.random_pose()
+        recovered = p1 @ Pose.from_twist(p1.twist_to(p2))
+        assert recovered == p2
+
+
+# ──  Mean ─────────────────────────────────────────────────────────────────────
+
+class TestMean:
+    def test_single_pose(self):
+        p = Pose.random_pose()
+        assert Pose.mean([p]) == p
+
+    def test_identical_poses(self):
+        p = Pose.random_pose()
+        assert Pose.mean([p, p, p]) == p
+
+    def test_mean_translation(self):
+        p1 = Pose([0, 0, 0], [0, 0, 0])
+        p2 = Pose([2, 0, 0], [0, 0, 0])
+        assert np.allclose(Pose.mean([p1, p2]).translation, [1, 0, 0])
+
+    def test_mean_rotation(self):
+        p1 = Pose([0, 0, 0], [0, 0, 0])
+        p2 = Pose([0, 0, 0], [0, 0, np.pi / 2])
+        pm = Pose.mean([p1, p2])
+        assert np.isclose(pm.get_euler('xyz')[2], np.pi / 4, atol=1e-5)
+
+    def test_weights(self):
+        p1 = Pose([0, 0, 0], [0, 0, 0])
+        p2 = Pose([4, 0, 0], [0, 0, 0])
+        pm = Pose.mean([p1, p2], weights=[1, 3])
+        assert np.allclose(pm.translation, [3, 0, 0])
+
+    def test_empty_raises(self):
+        with pytest.raises(AssertionError):
+            Pose.mean([])
+
+    def test_weights_mismatch_raises(self):
+        with pytest.raises(AssertionError):
+            Pose.mean([Pose.identity(), Pose.identity()], weights=[1])

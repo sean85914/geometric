@@ -5,6 +5,41 @@ from scipy.spatial.transform import Slerp
 from .geometric import unit_vector, angle_between_vectors, norm
 
 
+def _skew(v):
+    assert len(v) == 3
+    v1, v2, v3 = v
+    return np.array([
+        [0, -v3, v2],
+        [v3, 0, -v1],
+        [-v2, v1, 0]
+    ])
+
+
+def _left_jacobian(omega):
+    theta = norm(omega)
+    if np.isclose(theta, 0, atol=1e-5):
+        return np.eye(3)
+    W = _skew(omega)
+    W2 = W @ W
+    c = np.cos(theta)
+    s = np.sin(theta)
+    theta2 = theta**2
+    theta3 = theta**3
+    return np.eye(3) + (1 - c) / theta2 * W + (theta - s) / theta3 * W2
+
+
+def _left_jacobian_inv(omega):
+    theta = norm(omega)
+    if np.isclose(theta, 0, atol=1e-5):
+        return np.eye(3)
+    W = _skew(omega)
+    W2 = W @ W
+    theta2 = theta**2
+    theta_half = theta / 2
+    cot = 1 / np.tan(theta_half)
+    return np.eye(3) - 0.5 * W + (1 / theta2 * (1 - theta_half * cot)) * W2
+
+
 class Pose:
     """Represents a 3D pose composed of a translation and a rotation, stored as a 4x4 transformation matrix.
 
@@ -563,3 +598,110 @@ class Pose:
         p_rot = Pose.identity().set_rotation_from_rotvec(self.rotation)
         p = p_trans @ p_rot @ p_trans.inv
         return p.transform_points(points)
+
+    @staticmethod
+    def from_twist(twist):
+        '''Create a Pose from a 6D twist vector via the SE(3) exponential map.
+
+        Arguments:
+            twist (array-like): 6-element twist vector ``[omega, v]`` where
+                ``omega`` (first 3) is the rotation vector and ``v`` (last 3)
+                is the linear component of the twist.
+
+        Returns:
+            Pose: The corresponding Pose.
+
+        Raises:
+            AssertionError: If twist does not have exactly 6 elements.
+        '''
+        twist = np.array(twist)
+        assert len(twist) == 6, 'Twist must have 6 elements'
+        omega, t = twist[:3], twist[3:]
+        T = np.eye(4)
+        T[:3, :3] = R.from_rotvec(omega).as_matrix()
+        T[:3, 3] = _left_jacobian(omega) @ t
+        return Pose.from_matrix(T)
+
+    def to_twist(self):
+        '''Convert this Pose to a 6D twist vector via the SE(3) logarithmic map.
+
+        Returns:
+            numpy.ndarray: 6-element twist vector ``[omega, v]``.
+        '''
+        omega = self.get_rotvec()
+        t = _left_jacobian_inv(omega) @ self.translation
+        return np.concatenate([omega, t])
+
+    def twist_to(self, rhs):
+        '''Compute the relative twist from this pose to rhs on the SE(3) manifold.
+
+        The result is the SE(3) logarithm of ``self.inv @ rhs``, representing
+        the rigid body motion needed to move from self to rhs.
+
+        Arguments:
+            rhs (Pose): The target pose.
+
+        Returns:
+            numpy.ndarray: 6-element twist vector ``[omega, v]``.
+
+        Raises:
+            AssertionError: If rhs is not a Pose.
+        '''
+        assert isinstance(rhs, Pose)
+        return (self.inv @ rhs).to_twist()
+
+    def geodesic_distance(self, rhs):
+        '''Geodesic distance on SE(3) manifold.
+
+        Arguments:
+            rhs (Pose): The target pose.
+
+        Returns:
+            float: The geodesic distance, equal to ``norm(self.twist_to(rhs))``.
+
+        Raises:
+            AssertionError: If rhs is not a Pose.
+        '''
+        return norm(self.twist_to(rhs))
+
+    @staticmethod
+    def mean(poses, weights=None):
+        '''Compute the weighted mean of a list of Poses.
+
+        Rotation is averaged via the quaternion eigenvector method
+        (ref: https://stackoverflow.com/a/27410865), translation
+        via weighted arithmetic mean.
+
+        Arguments:
+            poses (list of Pose): Poses to average.
+            weights (array-like, optional): Weight for each pose. Defaults to uniform.
+
+        Returns:
+            Pose: The mean pose.
+
+        Raises:
+            AssertionError: If poses is empty or weights length mismatches.
+        '''
+        assert len(poses) > 0, 'poses must not be empty'
+        n = len(poses)
+
+        if weights is None:
+            weights = np.ones(n)
+        weights = np.array(weights, dtype=float)
+        assert len(weights) == n, 'weights length must match poses length'
+        weights /= weights.sum()
+
+        # Translation: weighted arithmetic mean
+        translations = np.array([p.translation for p in poses])
+        mean_trans = np.average(translations, weights=weights, axis=0)
+
+        # Rotation: eigenvector method on quaternions
+        quats = np.array([p.get_quaternion() for p in poses])  # (n, 4), [x,y,z,w]
+        # M = QQ^T, where Q = [w1q1 w2q2 ... wnqn]^T
+        M = sum(weights[i] * np.outer(quats[i], quats[i]) for i in range(n))
+        _, eigvecs = np.linalg.eigh(M)
+        mean_quat = eigvecs[:, -1]  # corresponsing eigenvector of maximum eigenvalue
+
+        return (Pose.identity()
+                .set_translation(mean_trans)
+                .set_rotation_from_quaternion(mean_quat))
