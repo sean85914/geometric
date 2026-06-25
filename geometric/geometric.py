@@ -2092,6 +2092,21 @@ def inv_parabolic_length(coeff, x1, length, max_iter=100, tol=1e-10):
 
 
 def triangle_area(p1, p2, p3):
+    '''Compute the area of a triangle defined by three points.
+
+    Arguments:
+        p1 (array-like): First vertex, 2D or 3D.
+        p2 (array-like): Second vertex, 2D or 3D.
+        p3 (array-like): Third vertex, 2D or 3D.
+
+    Returns:
+        float: The area of the triangle.
+
+    Raises:
+        AssertionError: If points have inconsistent or unsupported dimensions.
+        AssertionError: If any two points are duplicated.
+        AssertionError: If the three points are collinear.
+    '''
     assert len(p1) == len(p2) == len(p3), 'Points with different dimension'
     assert len(p1) in [2, 3], 'Points must be 2D or 3D'
     p1, p2, p3 = np.vstack([p1, p2, p3])
@@ -2107,6 +2122,25 @@ def triangle_area(p1, p2, p3):
 
 
 def polygon_area(points):
+    '''Compute the area of a simple (non-self-intersecting) polygon defined by an ordered list of vertices.
+
+    Uses fan triangulation from the first vertex: the polygon is split into triangles
+    ``(p0, p1, p2), (p0, p2, p3), ...`` and their signed cross products are summed.
+    Works correctly for both convex and concave polygons as long as the vertices are ordered
+    (clockwise or counter-clockwise) and the polygon does not self-intersect.
+
+    Arguments:
+        points (array-like): An ``(N, 2)`` or ``(N, 3)`` array of ordered polygon vertices.
+                             At least 3 points are required.
+
+    Returns:
+        float: The area of the polygon.
+
+    Raises:
+        AssertionError: If fewer than 3 points are provided.
+        AssertionError: If points are not 2D or 3D.
+        AssertionError: If 3D points are not coplanar.
+    '''
     points = np.array(points)  # (N, 2 or 3)
     assert points.shape[0] >= 3, 'At least 3 points required'
     assert points.shape[1] in [2, 3], 'Points must be 2D or 3D'

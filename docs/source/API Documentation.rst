@@ -102,6 +102,11 @@ Transform between Coordinates
 .. autofunction:: geometric.cartesian_to_spherical
 .. autofunction:: geometric.spherical_to_cartesian
 
+Area
+~~~~
+.. autofunction:: geometric.triangle_area
+.. autofunction:: geometric.polygon_area
+
 Pose
 ~~~~
 .. autoclass:: geometric.Pose
