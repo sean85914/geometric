@@ -19,6 +19,7 @@ from .geometric import (norm, is_zero_vector, unit_vector, is_on_axis, middle_po
                         distance_between_points_on_sphere, vector_rotation, parabolic_length, inv_parabolic_length,
                         triangle_area, polygon_area)
 from .pose import Pose
+from .ellipse import Ellipse
 
 
 __all__ = ['norm', 'is_zero_vector', 'unit_vector', 'is_on_axis', 'middle_point', 'average_point',
@@ -40,7 +41,7 @@ __all__ = ['norm', 'is_zero_vector', 'unit_vector', 'is_on_axis', 'middle_point'
            'spherical_cap_volume', 'overlap_volume_between_spheres', 'random_point_on_sphere',
            'point_sphere_relation', 'cartesian_to_spherical', 'spherical_to_cartesian',
            'distance_between_points_on_sphere', 'Pose', 'vector_rotation',
-           'parabolic_length', 'inv_parabolic_length', 'triangle_area', 'polygon_area']
+           'parabolic_length', 'inv_parabolic_length', 'triangle_area', 'polygon_area', 'Ellipse']
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __author__ = 'SEAN.LU'

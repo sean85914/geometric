@@ -14,7 +14,7 @@ setup(
     description="Module for geometric calculation",
     long_description=open("README.md").read(),
     long_description_content_type='text/markdown',
-    packages=["geometric"],
+    packages=["geometric", "geometric.tests"],
     install_requires=open('requirements.txt').read().splitlines(),
-    python_requires='>=3.9'
+    python_requires='>=3.8'
 )
