@@ -65,6 +65,32 @@ jobs:
           pip install -e .
           make -C docs html
 
+      - name: Prepare simple index
+        run: |
+          WHEEL_NAME=$(basename dist/*.whl)
+
+          # 從 gh-pages 抓回現有的 simple/ 目錄（保留舊版 wheel）
+          git fetch origin gh-pages
+          mkdir -p docs/build/html/simple/geometric
+          git checkout origin/gh-pages -- simple/
+          cp simple/index.html docs/build/html/simple/
+          cp simple/geometric/*.whl docs/build/html/simple/geometric/ 2>/dev/null || true
+
+          # 加入本次新 wheel
+          cp dist/$WHEEL_NAME docs/build/html/simple/geometric/
+
+          # 重新產生 simple/geometric/index.html
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html><head><title>Links for geometric</title></head>'
+            echo '<body><h1>Links for geometric</h1>'
+            for whl in docs/build/html/simple/geometric/*.whl; do
+              name=$(basename "$whl")
+              echo "<a href=\"$name\">$name</a><br>"
+            done
+            echo '</body></html>'
+          } > docs/build/html/simple/geometric/index.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
