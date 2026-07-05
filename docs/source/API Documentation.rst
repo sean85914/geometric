@@ -107,6 +107,11 @@ Area
 .. autofunction:: geometric.triangle_area
 .. autofunction:: geometric.polygon_area
 
+Ellipse
+~~~~~~~
+.. autoclass:: geometric.Ellipse
+    :members:
+
 Pose
 ~~~~
 .. autoclass:: geometric.Pose
