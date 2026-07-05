@@ -27,7 +27,7 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest geometric/tests/ -v
   lint:
     runs-on: ubuntu-latest
     steps:
