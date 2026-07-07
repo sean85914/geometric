@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import warnings
 import numpy as np
 from scipy.special import ellipe, ellipeinc
 from .geometric import unit_vector
@@ -40,9 +41,11 @@ class Ellipse:
     E: float
     F: float
 
+    M: np.ndarray = field(init=False)
     a: float = field(init=False)
     b: float = field(init=False)
-    T: np.ndarray = field(init=False)
+    T: np.ndarray = field(init=False)  # local -> global
+    T_inv: np.ndarray = field(init=False)  # global -> local
     theta: float = field(init=False)
     eccentricity: float = field(init=False)
 
@@ -55,16 +58,16 @@ class Ellipse:
         discriminant = B**2 - 4 * A * C
         assert discriminant < 0, f"Discriminent must less than 0, got {discriminant}"
 
-        M = np.array([
+        self.M = np.array([
             [A, B / 2],
             [B / 2, C]
         ])
-        h, k = np.linalg.solve(2 * M, [-D, -E])
+        h, k = np.linalg.solve(2 * self.M, [-D, -E])
 
         K = np.sqrt((A - C)**2 + B**2)
         v1 = (A + C - K) / 2
         v2 = (A + C + K) / 2
-        if np.isclose(B, 0, atol=1e-6):
+        if np.isclose(B, 0, atol=1e-5):
             ev1 = np.array([1.0, 0.0])
             ev2 = np.array([0.0, 1.0])
             if A > C:
@@ -76,6 +79,7 @@ class Ellipse:
         self.T = np.eye(3)
         self.T[:2, :2] = np.vstack([ev1, ev2]).T
         self.T[:2, 2] = h, k
+        self.T_inv = np.linalg.inv(self.T)
         self.theta = np.arctan2(self.T[1, 0], self.T[0, 0])
 
         F_prime = np.dot([A, B, C, D, E, F], [h**2, h * k, k**2, h, k, 1])
@@ -105,10 +109,7 @@ class Ellipse:
             numpy.ndarray: An ``(n, 2)`` array of 2D points on the ellipse boundary.
         """
         thetas = np.random.uniform(0, 2 * np.pi, n)
-        x = self.a * np.cos(thetas)
-        y = self.b * np.sin(thetas)
-        points = np.vstack([x, y, [1.0] * n])
-        return (self.T @ points)[:2, :].T
+        return self.parametric(thetas)
 
     @property
     def area(self):
@@ -194,3 +195,107 @@ class Ellipse:
         result, _, _, _ = np.linalg.lstsq(Phi, b, rcond=None)
         A, B, C, D, E = result
         return Ellipse(A, B, C, D, E, 1.0)
+
+    def evaluate(self, points):
+        """Evaluate the general conic equation at one or more points.
+
+        Arguments:
+            points (array-like): A single 2D point ``[x, y]``, or an ``(N, 2)``
+                array of points, in the global frame.
+
+        Returns:
+            float or numpy.ndarray: The conic equation value(s). Negative
+                inside the ellipse, positive outside, zero on the boundary.
+
+        Raises:
+            AssertionError: If ``points`` is not a single 2D point or an
+                ``(N, 2)`` array.
+        """
+        points = np.atleast_2d(points)  # (N, 2)
+        assert points.shape[1] == 2
+        results = np.sum((points @ self.M) * points, axis=1) + points @ np.array([self.D, self.E]) + self.F
+        if points.shape[0] == 1:
+            return results.item()
+        return results
+
+    def parametric(self, theta):
+        """Point(s) on the ellipse boundary at parameter angle(s) ``theta``.
+
+        Uses the standard parametric form :math:`(a\\cos\\theta, b\\sin\\theta)`
+        in the ellipse's local frame, transformed to the global frame via ``T``.
+
+        Arguments:
+            theta (float or array-like): Parameter angle(s) in radians.
+
+        Returns:
+            numpy.ndarray: A ``(2,)`` point for scalar ``theta``, or an
+            ``(N, 2)`` array of points for array-like ``theta``, in the
+            global frame.
+        """
+        scalar_input = np.ndim(theta) == 0
+        theta = np.atleast_1d(theta).astype(float)
+        local = np.vstack([self.a * np.cos(theta), self.b * np.sin(theta), np.ones_like(theta)])
+        points = (self.T @ local)[:2].T
+        return points[0] if scalar_input else points
+
+    def closest_point(self, point):
+        """Find the closest point on the ellipse boundary to a point.
+
+        The closest point is the one at which the ellipse's normal line
+        passes through ``point``.
+
+        Arguments:
+            point (array-like): A single 2D point ``[x, y]`` in the global frame.
+
+        Returns:
+            numpy.ndarray: The closest point on the ellipse, in the global
+            frame. If ``point`` already lies on the boundary, it is returned
+            unchanged.
+
+        Raises:
+            AssertionError: If more than one point is passed.
+
+        Warns:
+            UserWarning: If ``point`` coincides with the center of a circle
+                (``a == b``); every boundary point is then equally close, and
+                the point on the +X axis is returned as an arbitrary but
+                valid answer.
+        """
+        assert np.atleast_2d(point).shape[0] == 1
+        point = np.asarray(point, dtype=float)
+        if np.isclose(self.evaluate(point), 0, atol=1e-5):
+            return point
+        X1, Y1 = (self.T_inv @ [point[0], point[1], 1])[:2]
+        if np.isclose(self.a, self.b, atol=1e-5) and np.allclose([X1, Y1], 0, atol=1e-5):
+            warnings.warn(
+                'point coincides with the center of a circle; every point on the '
+                'boundary is equally close, returning the point on the +X axis'
+            )
+            return self.parametric(0)
+
+        c2 = self.a**2 - self.b**2
+        if np.isclose(Y1, 0, atol=1e-5):
+            thetas = [0, np.pi]
+            if not np.isclose(c2, 0, atol=1e-5):
+                cos_value = X1 * self.a / c2
+                if abs(cos_value) <= 1:
+                    theta = np.arccos(cos_value)
+                    thetas.extend([theta, -theta])
+        else:
+            coeffs = [
+                Y1 * self.b,
+                2 * (X1 * self.a + c2),
+                0.0,
+                2 * (X1 * self.a - c2),
+                -Y1 * self.b
+            ]
+
+            all_roots = np.roots(coeffs)
+            real_roots_mask = np.abs(all_roots.imag) < 1e-5
+            real_roots = all_roots[real_roots_mask].real
+
+            thetas = np.arctan2(2 * real_roots, 1 - real_roots**2)
+
+        eps = self.parametric(thetas)  # global
+        dists = np.linalg.norm(eps - point, axis=1)
+        return eps[np.argmin(dists)]
