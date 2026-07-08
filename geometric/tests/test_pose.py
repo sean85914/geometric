@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from geometric import unit_vector
 from geometric.pose import Pose, _skew, _left_jacobian, _left_jacobian_inv
 
 
@@ -91,6 +92,21 @@ class TestSetRotation:
         p = Pose.identity().set_rotation_from_euler([0, 0, np.pi / 2], 'xyz')
         x_transformed = p.matrix[:3, :3] @ [1, 0, 0]
         assert np.allclose(x_transformed, [0, 1, 0], atol=1e-6)
+
+    def test_from_vector_align_z_axis(self):
+        v = unit_vector([1, 2, 3])
+        p = Pose.identity().set_rotation_from_vector(v)
+        result = (p.matrix @ [0, 0, 1, 1])[:3]
+        assert np.allclose(result, v)
+
+    def test_from_vector_no_rotation(self):
+        p = Pose.identity().set_rotation_from_vector([1, 0, 0], target_axis=0)
+        assert np.allclose(p.matrix, np.eye(4))
+
+    def test_from_vector_opposite_axis(self):
+        p = Pose.identity().set_rotation_from_vector([0, -1, 0], target_axis=1)
+        result = (p.matrix @ [0, 1, 0, 1])[:3]
+        assert np.allclose(result, [0, -1, 0])
 
 
 # ── get_* representations ─────────────────────────────────────────────────────
