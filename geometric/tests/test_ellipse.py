@@ -1,6 +1,7 @@
+import warnings
 import pytest
 import numpy as np
-from geometric.ellipse import Ellipse
+from geometric import Ellipse
 
 
 # ── Construction ──────────────────────────────────────────────────────────────
@@ -140,6 +141,39 @@ class TestSectorArea:
         assert np.isclose(e.sector_area(0, np.pi / 2), e.sector_area(np.pi / 2, 0))
 
 
+# ── evaluate ──────────────────────────────────────────────────────────────────
+
+class TestEvaluate:
+    def test_on_curve_is_zero(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)  # x^2/4 + y^2 = 1
+        assert np.isclose(e.evaluate([2, 0]), 0)
+        assert np.isclose(e.evaluate([0, 1]), 0)
+
+    def test_center_is_negative(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        assert e.evaluate([0, 0]) < 0
+
+    def test_far_point_is_positive(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        assert e.evaluate([100, 100]) > 0
+
+    def test_single_point_returns_scalar(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        result = e.evaluate([2, 0])
+        assert isinstance(result, float)
+
+    def test_batch_returns_correct_shape(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        pts = np.array([[2, 0], [0, 1], [0, 0]])
+        result = e.evaluate(pts)
+        assert result.shape == (3,)
+
+    def test_rotated_ellipse_on_curve(self):
+        e = Ellipse(5 / 8, -3 / 4, 5 / 8, 0, 0, -1)
+        pts = e.sample_points(20)
+        assert np.allclose(e.evaluate(pts), 0)
+
+
 # ── sample_points ─────────────────────────────────────────────────────────────
 
 class TestSamplePoints:
@@ -150,16 +184,12 @@ class TestSamplePoints:
     def test_points_on_ellipse(self):
         e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
         pts = e.sample_points(50)
-        for p in pts:
-            val = e.A * p[0]**2 + e.B * p[0] * p[1] + e.C * p[1]**2 + e.D * p[0] + e.E * p[1] + e.F
-            assert np.isclose(val, 0.0, atol=1e-6)
+        assert np.allclose(e.evaluate(pts), 0)
 
     def test_rotated_ellipse_points_on_curve(self):
         e = Ellipse(5 / 8, -3 / 4, 5 / 8, 0, 0, -1)
         pts = e.sample_points(50)
-        for p in pts:
-            val = e.A * p[0]**2 + e.B * p[0] * p[1] + e.C * p[1]**2 + e.D * p[0] + e.E * p[1] + e.F
-            assert np.isclose(val, 0.0, atol=1e-6)
+        assert np.allclose(e.evaluate(pts), 0)
 
 
 # ── from_points ───────────────────────────────────────────────────────────────
@@ -187,3 +217,91 @@ class TestFromPoints:
     def test_wrong_dim_raises(self):
         with pytest.raises(AssertionError):
             Ellipse.from_points([[1, 0, 0]] * 10)
+
+
+# ── parametric ────────────────────────────────────────────────────────────────
+
+class TestParametric:
+    def test_scalar_theta_returns_point(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)  # a=2, b=1
+        assert np.allclose(e.parametric(0), [2, 0])
+        assert np.allclose(e.parametric(np.pi / 2), [0, 1])
+
+    def test_batch_theta_returns_array(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        pts = e.parametric([0, np.pi / 2])
+        assert pts.shape == (2, 2)
+        assert np.allclose(pts, [[2, 0], [0, 1]])
+
+    def test_translated_center(self):
+        e = Ellipse(1 / 4, 0, 1, -1 / 2, -4, 13 / 4)  # center (1, 2)
+        assert np.allclose(e.parametric(0), [1 + 2, 2])
+
+    def test_points_lie_on_curve(self):
+        e = Ellipse(5 / 8, -3 / 4, 5 / 8, 0, 0, -1)  # rotated ellipse
+        thetas = np.linspace(0, 2 * np.pi, 30)
+        pts = e.parametric(thetas)
+        assert np.allclose(e.evaluate(pts), 0, atol=1e-6)
+
+
+# ── closest_point ─────────────────────────────────────────────────────────────
+
+class TestClosestPoint:
+    def test_circle_point_outside_on_axis(self):
+        e = Ellipse(1, 0, 1, 0, 0, -1)  # unit circle at origin
+        assert np.allclose(e.closest_point([5, 0]), [1, 0])
+
+    def test_circle_point_outside_general_direction(self):
+        e = Ellipse(1, 0, 1, 0, 0, -1)
+        assert np.allclose(e.closest_point([3, 4]), [0.6, 0.8])
+
+    def test_circle_point_inside(self):
+        e = Ellipse(1, 0, 1, 0, 0, -1)
+        assert np.allclose(e.closest_point([0.5, 0]), [1, 0])
+
+    def test_circle_point_on_local_axis_no_warning(self):
+        # Regression: a == b makes c2 == 0. A point on the (arbitrary) local
+        # x-axis that ISN'T the center used to divide by zero (c2) inside
+        # the Y1 == 0 branch. Promote warnings to errors to catch it.
+        e = Ellipse(1, 0, 1, 0, 0, -1)
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            cp = e.closest_point([5, 0])
+        assert np.allclose(cp, [1, 0])
+
+    def test_circle_center_is_degenerate_and_warns(self):
+        e = Ellipse(1, 0, 1, 0, 0, -1)
+        with pytest.warns(UserWarning):
+            cp = e.closest_point([0, 0])
+        assert np.isclose(e.evaluate(cp), 0)       # returned point lies on the circle
+        assert np.isclose(np.linalg.norm(cp), 1)   # distance from center == radius
+
+    def test_point_on_curve_returns_itself(self):
+        e = Ellipse(5 / 8, -3 / 4, 5 / 8, 0, 0, -1)  # rotated ellipse
+        pts = e.sample_points(20)
+        for p in pts:
+            assert np.allclose(e.closest_point(p), p, atol=1e-4)
+
+    def test_ellipse_point_on_major_axis(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)  # a=2, b=1
+        assert np.allclose(e.closest_point([10, 0]), [2, 0])
+
+    def test_ellipse_point_on_minor_axis(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        assert np.allclose(e.closest_point([0, 10]), [0, 1])
+
+    def test_missing_theta_pi_root_regression(self):
+        # Regression: point far on the -X side, Y1=0. Before the theta=pi
+        # patch, the tan(theta/2) substitution silently dropped this root
+        # and returned the far vertex (2, 0) instead of the near one.
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        assert np.allclose(e.closest_point([-10, 0]), [-2, 0])
+
+    def test_matches_brute_force_search(self):
+        e = Ellipse(1 / 4, 0, 1, 0, 0, -1)
+        p = np.array([3, 1.5])
+        thetas = np.linspace(0, 2 * np.pi, 200000)
+        candidates = e.parametric(thetas)
+        brute_dist = np.linalg.norm(candidates - p, axis=1).min()
+        actual_dist = np.linalg.norm(e.closest_point(p) - p)
+        assert np.isclose(actual_dist, brute_dist, atol=1e-3)
