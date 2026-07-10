@@ -99,6 +99,19 @@ class Ellipse:
         """
         return self.T[:2, 2]
 
+    @property
+    def foci(self):
+        """The two foci of the ellipse.
+
+        Returns:
+            numpy.ndarray: A ``(2, 2)`` array; each row is a focus ``[x, y]``
+            in the global frame, located at :math:`(c, 0)` in the local
+            frame where :math:`c = \\sqrt{a^2 - b^2}`.
+        """
+        c = self.a * self.eccentricity
+        local = np.array([[c, 0, 1], [-c, 0, 1]]).T
+        return (self.T @ local)[:2].T
+
     def sample_points(self, n):
         """Sample random points uniformly distributed in parameter angle on the ellipse.
 
