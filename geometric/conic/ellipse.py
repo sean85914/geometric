@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import warnings
 import numpy as np
 from scipy.special import ellipe, ellipeinc
-from .geometric import unit_vector
+from geometric.conic import Conic
 
 
 @dataclass
-class Ellipse:
+class Ellipse(Conic):
     """Represents a 2D ellipse defined by its general conic form.
 
     The ellipse is defined by the equation:
@@ -34,59 +34,34 @@ class Ellipse:
         (2.0, 1.0)
     """
 
-    A: float
-    B: float
-    C: float
-    D: float
-    E: float
-    F: float
-
-    M: np.ndarray = field(init=False)
-    a: float = field(init=False)
-    b: float = field(init=False)
-    T: np.ndarray = field(init=False)  # local -> global
-    T_inv: np.ndarray = field(init=False)  # global -> local
-    theta: float = field(init=False)
-    eccentricity: float = field(init=False)
-
     def __post_init__(self):
         if self.A < 0:
             self.A, self.B, self.C, self.D, self.E, self.F = np.array(
                 [self.A, self.B, self.C, self.D, self.E, self.F]
             ) * -1  # make sure leading coefficient is positive
-        A, B, C, D, E, F = self.A, self.B, self.C, self.D, self.E, self.F
-        discriminant = B**2 - 4 * A * C
-        assert discriminant < 0, f"Discriminent must less than 0, got {discriminant}"
+        assert self.discriminant < 0, f"Discriminent must less than 0, got {self.discriminant}"
+        self._form_M()
+        h, k = self._solve_center()
 
-        self.M = np.array([
-            [A, B / 2],
-            [B / 2, C]
-        ])
-        h, k = np.linalg.solve(2 * self.M, [-D, -E])
+        values, vectors = np.linalg.eigh(self.M[:2, :2])
+        indices = np.argsort(np.abs(values))
 
-        K = np.sqrt((A - C)**2 + B**2)
-        v1 = (A + C - K) / 2
-        v2 = (A + C + K) / 2
-        if np.isclose(B, 0, atol=1e-5):
-            ev1 = np.array([1.0, 0.0])
-            ev2 = np.array([0.0, 1.0])
-            if A > C:
-                ev1, ev2 = ev2, -ev1
-        else:
-            ev1 = unit_vector(np.array([1, B / (A - C - K)]))
-            ev2 = unit_vector(np.array([1, B / (A - C + K)]))
+        F_prime = self.F + np.array([self.D, self.E]) @ np.array([h, k]) / 2
+        assert -F_prime / values[0] > 0, 'Not a real ellipse'
 
         self.T = np.eye(3)
-        self.T[:2, :2] = np.vstack([ev1, ev2]).T
+        self.T[:2, indices] = vectors[:, indices]
         self.T[:2, 2] = h, k
+        if np.linalg.det(self.T[:2, :2]) < 0:
+            self.T[:2, 1] *= -1  # fix handedness
+        # Constraint theta \in (-pi/2, pi/2]
+        if self.T[0, 0] < 0 or (np.isclose(self.T[0, 0], 0, atol=1e-5) and self.T[1, 0] < 0):
+            self.T[:2, :2] *= -1
         self.T_inv = np.linalg.inv(self.T)
-        self.theta = np.arctan2(self.T[1, 0], self.T[0, 0])
+        self.theta = self._compute_theta()
 
-        F_prime = np.dot([A, B, C, D, E, F], [h**2, h * k, k**2, h, k, 1])
-        assert -F_prime / v1 > 0, 'Not a real ellipse'
-
-        self.a = np.sqrt(-F_prime / v1)
-        self.b = np.sqrt(-F_prime / v2)
+        self.a = np.sqrt(-F_prime / values[indices[0]])
+        self.b = np.sqrt(-F_prime / values[indices[1]])
         self.eccentricity = np.sqrt(1 - self.b**2 / self.a**2)
         # x^2 / a^2 + y^2 / b^2 = 1
 
@@ -208,28 +183,6 @@ class Ellipse:
         result, _, _, _ = np.linalg.lstsq(Phi, b, rcond=None)
         A, B, C, D, E = result
         return Ellipse(A, B, C, D, E, 1.0)
-
-    def evaluate(self, points):
-        """Evaluate the general conic equation at one or more points.
-
-        Arguments:
-            points (array-like): A single 2D point ``[x, y]``, or an ``(N, 2)``
-                array of points, in the global frame.
-
-        Returns:
-            float or numpy.ndarray: The conic equation value(s). Negative
-                inside the ellipse, positive outside, zero on the boundary.
-
-        Raises:
-            AssertionError: If ``points`` is not a single 2D point or an
-                ``(N, 2)`` array.
-        """
-        points = np.atleast_2d(points)  # (N, 2)
-        assert points.shape[1] == 2
-        results = np.sum((points @ self.M) * points, axis=1) + points @ np.array([self.D, self.E]) + self.F
-        if points.shape[0] == 1:
-            return results.item()
-        return results
 
     def parametric(self, theta):
         """Point(s) on the ellipse boundary at parameter angle(s) ``theta``.
