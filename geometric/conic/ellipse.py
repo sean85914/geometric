@@ -248,6 +248,7 @@ class Ellipse(Conic):
                     theta = np.arccos(cos_value)
                     thetas.extend([theta, -theta])
         else:
+            # Solve tan\frac{\theta}{2}
             coeffs = [
                 Y1 * self.b,
                 2 * (X1 * self.a + c2),

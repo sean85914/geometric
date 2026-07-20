@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+from geometric import line_from_point_vector
 from geometric.conic import Conic
 
 
@@ -52,4 +53,32 @@ class Hyperbola(Conic):
         return points[0] if scalar_input else points
 
     def closest_point(self, point):
-        raise NotImplementedError()
+        assert np.atleast_2d(point).shape[0] == 1
+        point = np.asarray(point, dtype=float)
+        if np.isclose(self.evaluate(point), 0, atol=1e-5):
+            return point
+        point_local = (self.T_inv @ [point[0], point[1], 1.0])[:2]
+        c2 = self.a**2 + self.b**2
+        # Solve tan\theta
+        all_roots = np.roots([
+            c2**2,
+            -2 * self.b * point_local[1] * c2,
+            c2**2 + self.b**2 * point_local[1]**2 - self.a**2 * point_local[0]**2,
+            -2 * self.b * point_local[1] * c2,
+            self.b**2 * point_local[1]**2
+        ])
+        real_roots_mask = np.abs(all_roots.imag) < 1e-5
+        real_roots = all_roots[real_roots_mask].real
+        theta = np.arctan(real_roots)
+        thetas = np.concatenate([theta, theta + np.pi])
+        ps = self.parametric(thetas)  # global
+        dists = np.linalg.norm(ps - point, axis=1)
+        return ps[np.argmin(dists)]
+
+    @property
+    def asymptote(self):
+        vec_1 = (self.T @ [self.a, self.b, 0.0])[:2]
+        vec_2 = (self.T @ [-self.a, self.b, 0.0])[:2]
+        line_1 = line_from_point_vector(self.T[:2, 2], vec_1)
+        line_2 = line_from_point_vector(self.T[:2, 2], vec_2)
+        return [line_1, line_2]

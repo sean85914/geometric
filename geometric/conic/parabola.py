@@ -65,12 +65,15 @@ class Parabola(Conic):
     def closest_point(self, point):
         assert np.atleast_2d(point).shape[0] == 1
         point = np.asarray(point, dtype=float)
+        if np.isclose(self.evaluate(point), 0, atol=1e-5):
+            return point
+        point_local = (self.T_inv @ [point[0], point[1], 1.0])[:2]
         m = self.a / self.b
         all_roots = np.roots([
-            2 - m**2,
+            2 * m**2,
             0,
-            1 - 2 * m * point[1],
-            -point[0]
+            1 - 2 * m * point_local[1],
+            -point_local[0]
         ])
         real_roots_mask = np.abs(all_roots.imag) < 1e-5
         real_roots = all_roots[real_roots_mask].real
