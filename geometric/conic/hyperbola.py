@@ -45,6 +45,19 @@ class Hyperbola(Conic):
         local = np.array([[c, 0, 1], [-c, 0, 1]]).T
         return (self.T @ local)[:2].T
 
+    @property
+    def directrix(self):
+        vec_global = (self.T @ [0.0, 1.0, 0.0])[:2]
+        p_local = np.array([
+            [self.a / self.eccentricity, 0.0, 1.0],
+            [-self.a / self.eccentricity, 0.0, 1.0]
+        ])
+        p_global = (self.T @ p_local.T).T[:, :2]
+        return np.array([
+            line_from_point_vector(p_global[0], vec_global),
+            line_from_point_vector(p_global[1], vec_global)
+        ])
+
     def parametric(self, theta):
         scalar_input = np.ndim(theta) == 0
         theta = np.atleast_1d(theta).astype(float)

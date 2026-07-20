@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import warnings
 import numpy as np
 from scipy.special import ellipe, ellipeinc
+from geometric import line_from_point_vector
 from geometric.conic import Conic
 
 
@@ -86,6 +87,19 @@ class Ellipse(Conic):
         c = self.a * self.eccentricity
         local = np.array([[c, 0, 1], [-c, 0, 1]]).T
         return (self.T @ local)[:2].T
+
+    @property
+    def directrix(self):
+        vec_global = (self.T @ [0.0, 1.0, 0.0])[:2]
+        p_local = np.array([
+            [self.a / self.eccentricity, 0.0, 1.0],
+            [-self.a / self.eccentricity, 0.0, 1.0]
+        ])
+        p_global = (self.T @ p_local.T).T[:, :2]
+        return np.array([
+            line_from_point_vector(p_global[0], vec_global),
+            line_from_point_vector(p_global[1], vec_global)
+        ])
 
     def sample_points(self, n):
         """Sample random points uniformly distributed in parameter angle on the ellipse.

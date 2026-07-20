@@ -32,6 +32,16 @@ class Conic(ABC):
     def discriminant(self):
         return self.B**2 - 4 * self.A * self.C
 
+    @property
+    @abstractmethod
+    def foci(self):
+        pass
+
+    @property
+    @abstractmethod
+    def directrix(self):
+        pass
+
     def _solve_center(self):
         assert not np.isclose(np.linalg.det(self.M[:2, :2]), 0, atol=1e-5), 'Matrix is singular'
         h, k = np.linalg.solve(2 * self.M[:2, :2], [-self.D, -self.E])
