@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import numpy as np
+from geometric import random_point_on_line
 
 
 @dataclass
@@ -72,6 +73,26 @@ class Conic(ABC):
 
     def _compute_theta(self):
         return np.arctan2(self.T[1, 0], self.T[0, 0])
+
+    def intersection_between_line(self, line):
+        assert len(line) == 3
+        p = np.hstack([random_point_on_line(line), 1])
+        a, b, c = line
+        vec = np.array([-b, a, 0.0])
+        alpha = vec @ self.M @ vec
+        beta = 2 * vec @ self.M @ p
+        gamma = p @ self.M @ p
+        discriminant = beta**2 - 4 * alpha * gamma
+        if discriminant < 0:
+            return np.zeros((0, 2))
+        else:
+            if np.isclose(discriminant, 0, atol=1e-5):
+                ts = np.array([-beta / (2 * alpha)])
+            else:
+                sqrt = np.sqrt(discriminant)
+                ts = np.array([-beta + sqrt, -beta - sqrt]) / (2 * alpha)
+        points = p[:2] + ts[:, None] * vec[:2]
+        return points
 
     @abstractmethod
     def parametric(self, t):
