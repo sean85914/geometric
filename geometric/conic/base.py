@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import numpy as np
-from geometric import random_point_on_line
+from geometric import project_point_on_line, unit_vector, is_zero_vector
 
 
 @dataclass
@@ -74,23 +74,31 @@ class Conic(ABC):
     def _compute_theta(self):
         return np.arctan2(self.T[1, 0], self.T[0, 0])
 
-    def intersection_between_line(self, line):
+    def intersection_with_line(self, line):
         assert len(line) == 3
-        p = np.hstack([random_point_on_line(line), 1])
+        assert not is_zero_vector(line[:2]), 'Input is not a line'
+        p = np.hstack([project_point_on_line((0.0, 0.0), line), 1])
         a, b, c = line
-        vec = np.array([-b, a, 0.0])
+        vec = unit_vector([-b, a, 0.0])
         alpha = vec @ self.M @ vec
         beta = 2 * vec @ self.M @ p
         gamma = p @ self.M @ p
-        discriminant = beta**2 - 4 * alpha * gamma
-        if discriminant < 0:
-            return np.zeros((0, 2))
-        else:
-            if np.isclose(discriminant, 0, atol=1e-5):
-                ts = np.array([-beta / (2 * alpha)])
+        if np.isclose(alpha, 0.0, atol=1e-5):
+            if np.isclose(beta, 0.0, atol=1e-5):
+                # gamma will never be zero since conic won't degenerate
+                return np.zeros((0, 2))
             else:
-                sqrt = np.sqrt(discriminant)
-                ts = np.array([-beta + sqrt, -beta - sqrt]) / (2 * alpha)
+                ts = np.array([-gamma / beta])
+        else:
+            discriminant = beta**2 - 4 * alpha * gamma
+            if discriminant < -1e-5:
+                return np.zeros((0, 2))
+            else:
+                if np.isclose(discriminant, 0, atol=1e-5):
+                    ts = np.array([-beta / (2 * alpha)])
+                else:
+                    sqrt = np.sqrt(discriminant)
+                    ts = np.array([-beta + sqrt, -beta - sqrt]) / (2 * alpha)
         points = p[:2] + ts[:, None] * vec[:2]
         return points
 
